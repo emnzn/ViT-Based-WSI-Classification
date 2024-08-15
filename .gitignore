@@ -3,3 +3,4 @@
 *.xlsx
 data/*
 CLAM/*
+__pycache__/*

@@ -1,6 +1,6 @@
 *.jpg
 *.png
 *.xlsx
-data/*
-CLAM/*
-*/__pycache__/*
+data/
+CLAM/
+__pycache__/*

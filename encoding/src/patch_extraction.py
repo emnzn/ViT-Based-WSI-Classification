@@ -8,19 +8,17 @@ from tqdm import tqdm
 
 # Local Imports
 from utils import (
-    pad_img,
     get_args, 
     patchify,
     save_patches,
-    save_patch_args, 
-    get_target_size,
+    save_patch_args,
     )
 
 
 def main():
-    data_dir = os.path.join("..", "data", "images")
+    data_dir = os.path.join("..", "..", "data", "images")
     arg_dir = os.path.join("configs", "patch-config.yaml")
-    patch_dir = os.path.join("..", "data", "patches")
+    patch_dir = os.path.join("..", "..", "data", "patches")
     
     os.makedirs(patch_dir, exist_ok=True)
 

@@ -49,7 +49,7 @@ def main():
     patient_ids = [id for id in os.listdir(data_dir) if "." not in id]
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    model = get_model(args["model"], device, hf_token)
+    model = get_model(args["model"], device, hf_token).to(device)
 
     for i, id in enumerate(patient_ids):
         print(f"patient: {id} | [{i+1}/{len(patient_ids)+1}]")

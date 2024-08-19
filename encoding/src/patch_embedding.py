@@ -52,7 +52,7 @@ def main():
     model = get_model(args["model"], device, hf_token).to(device)
 
     for i, id in enumerate(patient_ids):
-        print(f"patient: {id} | [{i+1}/{len(patient_ids)+1}]")
+        print(f"patient: {id} | [{i+1}/{len(patient_ids)}]")
 
         id_dir = os.path.join(data_dir, id)
         save_dir = os.path.join(dest_dir, f"{id}.parquet")

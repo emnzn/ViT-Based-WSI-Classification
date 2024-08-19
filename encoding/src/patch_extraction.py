@@ -40,7 +40,7 @@ def main():
         target_shape = get_target_shape(wsi, args["patch_size"])
         
         if target_shape != wsi.shape[:2]: 
-            wsi = pad_img(wsi, args["patch_size"]) 
+            wsi = pad_img(wsi, target_shape) 
 
         image_patches, coordinates = patchify(wsi, args["patch_size"], args["overlap"])
         save_patches(
@@ -48,6 +48,7 @@ def main():
             coordinates, 
             os.path.join(output_dir, image_name)
         )
+        break
 
 
 if __name__ == "__main__":

@@ -8,10 +8,12 @@ from tqdm import tqdm
 
 # Local Imports
 from utils import (
+    pad_img,
     get_args, 
     patchify,
     save_patches,
     save_patch_args,
+    get_target_shape
     )
 
 
@@ -35,7 +37,12 @@ def main():
         image_name = Path(image_path).stem.split(".")[0]
         wsi = pyvips.Image.new_from_file(image_path, access="sequential").numpy()
 
-        image_patches, coordinates = patchify(wsi, args["patchsize"], args["overlap"])
+        target_shape = get_target_shape(wsi, args["patch_size"])
+        
+        if target_shape != wsi.shape[:2]: 
+            wsi = pad_img(wsi, args["patch_size"]) 
+
+        image_patches, coordinates = patchify(wsi, args["patch_size"], args["overlap"])
         save_patches(
             image_patches, 
             coordinates, 

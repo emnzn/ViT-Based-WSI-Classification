@@ -148,52 +148,24 @@ def get_nearest_multiple(source, target) -> int:
     return nearest_multiple
 
 
-def get_target_shape(
-    img: np.ndarray, 
-    img_patch_size: int,
-    model_patch_size: int,
-    model_window_size: int,
-    ) -> Tuple[int]:
-
+def get_target_shape(img: np.ndarray, patch_size: int) -> Tuple[int]:
     """
-    Calculates the target shape of an image so that its dimensions are multiples of the appropriate patch and window sizes.
-
-    Parameters
-    ----------
-    img: np.ndarray
-        The input image.
-
-    img_patch_size: int
-        The size of the patches to extract from the image.
-
-    model_patch_size: int
-        The patch size used in the model.
-
-    model_window_size: int
-        The window size used in the model.
+    Calculates the target shape of an image, to become a multiple of the patch size.
 
     Returns
     -------
-    target_size: Tuple[int, int]
-        The adjusted (height, width) that are multiples of both the image patch size and the model's patch and window sizes.
+    target_size: Tuple[int]
+        The size the image should be to become a multiple of the target number.
     """
 
-    img_height, img_width = img.shape[0], img.shape[1]
+    source_height, source_width = img.shape[0], img.shape[1]
 
-    lcm_size = np.lcm(model_patch_size, model_window_size)
-    lcm_size = lcm_size if lcm_size > 224 else 224
+    target_height = get_nearest_multiple(source_height, patch_size)
+    target_width = get_nearest_multiple(source_width, patch_size)
 
-    def adjust_dimension(dim: int, patch_size: int) -> int:
-        dim = get_nearest_multiple(dim, patch_size)
-        num_patches = dim // patch_size
-        num_patches = get_nearest_multiple(num_patches, lcm_size)
-        return int(num_patches * patch_size)
+    target_size = (target_height, target_width)
 
-
-    target_height = adjust_dimension(img_height, img_patch_size)
-    target_width = adjust_dimension(img_width, img_patch_size)
-
-    return target_height, target_width
+    return target_size
 
 
 def pad_img(img: np.ndarray, target_shape: Tuple[int]) -> np.ndarray:
@@ -209,9 +181,16 @@ def pad_img(img: np.ndarray, target_shape: Tuple[int]) -> np.ndarray:
     delta_h = target_shape[0] - current_shape[0]
     delta_w = target_shape[1] - current_shape[1]
 
-    h_pad = delta_h // 2
-    w_pad = delta_w // 2
+    pad_top = delta_h // 2
+    pad_bottom = delta_h - pad_top
+    
+    pad_left = delta_w // 2
+    pad_right = delta_w - pad_left
 
-    padded_img = cv2.copyMakeBorder(img, h_pad, h_pad, w_pad, w_pad, borderType=cv2.BORDER_CONSTANT, value=bg_color)
+    padded_img = cv2.copyMakeBorder(
+        img, pad_top, pad_bottom, 
+        pad_left, pad_right, 
+        borderType=cv2.BORDER_CONSTANT, value=bg_color
+        )
 
     return padded_img

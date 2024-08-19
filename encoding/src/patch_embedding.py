@@ -63,7 +63,6 @@ def main():
 
         print(f"\nembeddings saved")
         print("-------------------------------------------------------------------\n")
-        break
 
 
 if __name__ == "__main__":

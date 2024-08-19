@@ -25,5 +25,8 @@ def get_model(
 
         state_dict = torch.load(filepath, map_location=torch.device(device), weights_only=True)
         model.load_state_dict(state_dict, strict=True)
+
+    if torch.cuda.device_count() > 1:
+        model = torch.nn.DataParallel(model)
         
     return model

@@ -3,10 +3,8 @@ from typing import List
 
 import timm
 import torch
-import pyvips
-import numpy as np
 from tqdm import tqdm
-from PIL import Image
+from dotenv import load_dotenv
 from torch.utils.data.dataloader import DataLoader
 
 from utils import *
@@ -38,6 +36,9 @@ def embed_patches(
 
 
 def main():
+    load_dotenv(os.path.join("..", ".env"))
+    hf_token = os.getenv('HF_TOKEN')
+
     arg_dir = os.path.join("configs", "embed-config.yaml")
     args = get_args(arg_dir)
     
@@ -48,7 +49,7 @@ def main():
     patient_ids = [id for id in os.listdir(data_dir) if "." not in id]
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    model = get_model(args["model"], device)
+    model = get_model(args["model"], device, hf_token)
 
     for i, id in enumerate(patient_ids):
         print(f"patient: {id} | [{i+1}/{len(patient_ids)+1}]")

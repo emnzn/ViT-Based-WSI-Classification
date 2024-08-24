@@ -7,7 +7,12 @@ from tqdm import tqdm
 from dotenv import load_dotenv
 from torch.utils.data.dataloader import DataLoader
 
-from utils import *
+from utils import (
+    PatchingDataset, 
+    save_embeddings, 
+    get_args, 
+    get_model
+    )
 
 
 def embed_patches(

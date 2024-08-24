@@ -7,7 +7,6 @@ from PIL import Image
 from torchvision import transforms
 from torch.utils.data import Dataset
 
-from utils import extract_coords
 
 class PatchingDataset(Dataset):
     """

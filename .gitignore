@@ -3,6 +3,6 @@
 *.jpg
 *.png
 *.xlsx
-data/
+*data/
 CLAM/
 **/__pycache__/*

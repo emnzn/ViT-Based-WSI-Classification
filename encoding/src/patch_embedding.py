@@ -47,8 +47,8 @@ def main():
     arg_dir = os.path.join("configs", "embed-config.yaml")
     args = get_args(arg_dir)
     
-    data_dir = os.path.join("..", "..", "data", "patches", f"experiment-{args['experiment_num']}")
-    dest_dir = os.path.join("..", "..", "data", "embeddings", f"experiment-{args['experiment_num']}")
+    data_dir = os.path.join("..", "..", "raw-data", "patches", f"experiment-{args['experiment_num']}")
+    dest_dir = os.path.join("..", "..", "raw-data", "embeddings", f"experiment-{args['experiment_num']}", args["model"])
 
     os.makedirs(dest_dir, exist_ok=True)
     patient_ids = [id for id in os.listdir(data_dir) if "." not in id]

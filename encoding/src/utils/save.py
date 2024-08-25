@@ -1,8 +1,9 @@
-import os
 from typing import Dict, Union
 
 import numpy as np
 import pandas as pd
+
+from .patch import extract_coords
 
 def save_embeddings(
     results: Dict[str, Union[str, np.ndarray]],
@@ -19,4 +20,6 @@ def save_embeddings(
     """
 
     df = pd.DataFrame(results)
-    df.to_parquet(save_dir)
+    df["processed_coords"] = df["coords"].map(lambda x: extract_coords(x))
+    df = df.sort_values(by="processed_coords", key=lambda col: col.map(lambda x: (x[2], x[3], x[0], x[1])))
+    df.to_parquet(save_dir, index=False)

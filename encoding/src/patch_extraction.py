@@ -18,9 +18,9 @@ from utils import (
 
 
 def main():
-    data_dir = os.path.join("..", "..", "data", "images")
+    data_dir = os.path.join("..", "..", "raw-data", "images")
     arg_dir = os.path.join("configs", "patch-config.yaml")
-    patch_dir = os.path.join("..", "..", "data", "patches")
+    patch_dir = os.path.join("..", "..", "raw-data", "patches")
     
     os.makedirs(patch_dir, exist_ok=True)
 

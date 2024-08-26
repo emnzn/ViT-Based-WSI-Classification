@@ -12,19 +12,32 @@ class WSIDataset(Dataset):
 
     """
     Creates the dataset class for the dataloader.
+
+    Parameters
+    ----------
+    data_dir: str
+        The directory to the embeddings.
+    
+    label_dir: str
+        The directory to the labels.
+
+    mil: bool
+        Whether compiling for a Multiple-Instance Based Model.
     """
 
     def __init__(
         self, 
         data_dir: str, 
         label_dir: str,
+        mil: bool
         ):
 
         self.data_dir = data_dir
-        self.patient_ids = os.listdir(data_dir)
+        self.filenames = os.listdir(data_dir)
         self.labels = self.generate_labels(label_dir)
+        self.mil = mil
 
-        assert all([Path(i).stem in self.labels for i in self.patient_ids]), "All patient ids must have a label"
+        assert all([Path(i).stem in self.labels for i in self.filenames]), "All patient ids must have a label"
 
     
     def generate_labels(self, label_dir: str) -> Dict[str, str]:
@@ -43,13 +56,21 @@ class WSIDataset(Dataset):
         return labels
     
     def __len__(self):
-        return len(self.patient_ids)
+        return len(self.filenames)
     
     def __getitem__(self, idx):
-        patient_id = self.patient_ids[idx]
-        label = self.labels[Path(patient_id).stem]
+        filename = self.filenames[idx]
+        patient_id = Path(filename).stem
+        label = self.labels[patient_id]
 
-        embedding_path = os.path.join(self.data_dir, patient_id)
-        embedding = torch.tensor(np.load(embedding_path)).permute(2, 0, 1)
+        embedding_path = os.path.join(self.data_dir, filename)
+        embedding = torch.tensor(np.load(embedding_path)) # [height, width, channels]
 
-        return embedding, label
+        if self.mil:
+            height, width, channels = embedding.shape
+            embedding = embedding.reshape(height * width, channels)
+
+        else:
+            embedding = embedding.permute(2, 0, 1) # [channels, height, width]
+
+        return embedding, label, patient_id

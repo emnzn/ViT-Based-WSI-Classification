@@ -36,7 +36,13 @@ def swin_transformer(
     model: SwinTransformer
         The initialized Swin Transformer.
     """
-    assert version in ["v1", "v2"] and variant in ["tiny", "small", "base"], "Version must be one of [v1, v2] and variant must be one of [tiny, small, base]."
+
+    valid_versions = ["v1", "v2"]
+    valid_variants = ["tiny", "small", "base"]
+    assertion_message = f"Swin transformer version must be one of {valid_versions} and variant must be one of {valid_variants}"
+
+    assert version in valid_versions and variant in valid_variants, assertion_message
+
     if version == "v1":
         if variant == "tiny":
             model = swin_t()
@@ -95,6 +101,11 @@ def resnet(
     model: ResNet
         The initialized ResNet model.
     """
+
+    valid_variants = ["resnet18", "resnet34", "resnet50", "resnet101", "resnet152"]
+    assertion_message = f"ResNet variant must be one of {valid_variants}."
+
+    assert variant in valid_variants, assertion_message
 
     if variant == "resnet18":
         model = resnet18()

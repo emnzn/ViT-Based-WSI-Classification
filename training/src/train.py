@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from typing import Tuple, Union
 
 import torch
@@ -15,13 +16,13 @@ from utils import (
     get_args,
     save_args,
     set_seed,
-    get_checkpoint,
     resnet,
     attention_mil,
     swin_transformer,
     ResNet,
     SwinTransformer,
-    AttentionBasedMIL
+    AttentionBasedMIL,
+    get_training_checkpoint
 )
 
 def train(
@@ -36,8 +37,8 @@ def train(
 
     metrics = {
         "running_loss": 0,
-        "running_f1": 0,
-        "running_balanced_accuracy": 0,
+        "predictions": [],
+        "targets": []
     }
 
     model.train()
@@ -61,16 +62,13 @@ def train(
         confidence = F.softmax(logits, dim=1)
         pred = torch.argmax(confidence, dim=1)
 
-        balanced_accuracy = balanced_accuracy_score(target.cpu(), pred.cpu())
-        f1 = f1_score(target.cpu(), pred.cpu(), average="weighted")
-
         metrics["running_loss"] += loss.detach().cpu().item()
-        metrics["running_f1"] += f1
-        metrics["running_balanced_accuracy"] += balanced_accuracy
+        metrics["predictions"].extend(pred.cpu().numpy())
+        metrics["targets"].extend(target.cpu().numpy())
 
     epoch_loss = metrics["running_loss"] / (len(dataloader) / grad_accumulation)
-    epoch_f1 = metrics["running_f1"] / len(dataloader)
-    epoch_balanced_accuracy = metrics["running_balanced_accuracy"] / len(dataloader)
+    epoch_f1 = f1_score(metrics["targets"], metrics["predictions"], average="weighted")
+    epoch_balanced_accuracy = balanced_accuracy_score(metrics["targets"], metrics["predictions"])
 
     return epoch_loss, epoch_f1, epoch_balanced_accuracy
 
@@ -86,12 +84,12 @@ def validate(
     
     metrics = {
         "running_loss": 0,
-        "running_f1": 0,
-        "running_balanced_accuracy": 0,
+        "predictions": [],
+        "targets": []
     }
 
     model.eval()
-    for wsi_embedding, target in tqdm(dataloader, desc="Validation in progess"):
+    for wsi_embedding, target, _ in tqdm(dataloader, desc="Validation in progess"):
         wsi_embedding = wsi_embedding.to(device)
         target = target.to(device)
 
@@ -105,18 +103,118 @@ def validate(
         confidence = F.softmax(logits, dim=1)
         pred = torch.argmax(confidence, dim=1)
 
-        balanced_accuracy = balanced_accuracy_score(target.cpu(), pred.cpu())
-        f1 = f1_score(target.cpu(), pred.cpu(), average="weighted")
-
         metrics["running_loss"] += loss.detach().cpu().item()
-        metrics["running_f1"] += f1
-        metrics["running_balanced_accuracy"] += balanced_accuracy
+        metrics["predictions"].extend(pred.cpu().numpy())
+        metrics["targets"].extend(target.cpu().numpy())
 
     epoch_loss = metrics["running_loss"] / len(dataloader)
-    epoch_f1 = metrics["running_f1"] / len(dataloader)
-    epoch_balanced_accuracy = metrics["running_balanced_accuracy"] / len(dataloader)
+    epoch_f1 = f1_score(metrics["targets"], metrics["predictions"], average="weighted")
+    epoch_balanced_accuracy = balanced_accuracy_score(metrics["targets"], metrics["predictions"])
     
     return epoch_loss, epoch_f1, epoch_balanced_accuracy
 
 def main():
-    pass
+    config_dir = os.path.join("configs", "train-config.yaml")
+    args = get_args(config_dir)
+    experiment_id = datetime.now().strftime("%m-%d-%Y_%H-hrs")
+    mil = True if args["model"] == "attention-mil" else False
+    
+    root_data_dir = os.path.join("..", "data", args["feature_extractor"], f"trial-{args['trial_num']}")
+    train_dir = os.path.join(root_data_dir, "train")
+    val_dir = os.path.join(root_data_dir, "val")
+
+    label_dir = os.path.join("..", "data", "labels.csv")
+    model_dir = os.path.join("..", "assets", "models", experiment_id)
+    log_dir = os.path.join("runs", experiment_id)
+
+    if args["version"]:
+        save_base_name = f"{args['model']}-{args['version']}-{args['variant']}"
+    
+    else:
+        save_base_name = f"{args['model']}-{args['variant']}"
+    
+    writer = SummaryWriter(log_dir)
+    save_args(log_dir, args)
+    set_seed(args["seed"])
+    
+    os.makedirs(model_dir, exist_ok=True)
+
+    # device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = "mps"
+
+    train_dataset = WSIDataset(data_dir=train_dir, label_dir=label_dir, mil=mil)
+    val_dataset = WSIDataset(data_dir=val_dir, label_dir=label_dir, mil=mil)
+
+    train_loader = DataLoader(train_dataset, batch_size=1, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=1, shuffle=False)
+
+    if mil:
+        model = attention_mil(num_classes=args["num_classes"])
+
+    if args["model"] == "resnet":
+        model = resnet(variant=args["variant"], num_classes=args["num_classes"]).to(device)
+
+    if args["model"] == "swin":
+        model = swin_transformer(version=args["version"], variant=args["variant"]).to(device)
+
+    criterion = nn.CrossEntropyLoss(label_smoothing=args["label_smoothing"])
+    optimizer = optim.AdamW(model.parameters(), lr=args["learning_rate"], weight_decay=args["weight_decay"])
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, args["epochs"], eta_min=args["eta_min"])
+
+
+    running_val_loss = []
+    running_val_f1_score = []
+    running_val_balanced_accuracy = []
+
+    for epoch in range(1, args["epochs"]):
+        writer.add_scalar("Learning Rate", scheduler.optimizer.param_groups[0]["lr"], epoch)
+        print(f"Epoch [{epoch}/{args['epochs']}]")
+
+        train_loss, train_f1, train_balanced_accuracy = train(
+            dataloader=train_loader, criterion=criterion, optimizer=optimizer, 
+            mil=mil, model=model, device=device, grad_accumulation=args["grad_accumulation"]
+            )
+
+        print("Train Statistics:")
+        print(f"Loss: {train_loss:.4f} | F1 score: {train_f1:.4f} | Balanced Accuracy: {train_balanced_accuracy:.4f}\n")
+
+        writer.add_scalar("Train/Loss", train_loss, epoch)
+        writer.add_scalar("Train/F1", train_f1, epoch)
+        writer.add_scalar("Train/Balanced-Accuracy", train_balanced_accuracy, epoch)
+
+        val_loss, val_f1, val_balanced_accuracy = validate(
+            dataloader=val_loader, criterion=criterion, model=model, mil=mil, device=device
+            )
+        
+        print("Validation Statistics:")
+        print(f"Loss: {val_loss:.4f} | F1 Score: {val_f1:.4f} | Balanced Accuracy: {val_balanced_accuracy:.4f}\n")
+
+        writer.add_scalar("Validation/Loss", val_loss, epoch)
+        writer.add_scalar("Validation/F1", val_f1, epoch)
+        writer.add_scalar("Validation/Balanced-Accuracy", val_balanced_accuracy, epoch)
+
+        if len(running_val_loss) > 0 and val_loss < min(running_val_loss):
+            torch.save(model.state_dict(), os.path.join(model_dir, f"{save_base_name}-lowest-loss.pth"))
+            print("New minimum loss — model saved.")
+
+        if len(running_val_balanced_accuracy) > 0 and val_balanced_accuracy > max(running_val_balanced_accuracy):
+            torch.save(model.state_dict(), os.path.join(model_dir, f"{save_base_name}-balanced-accuracy.pth"))
+            print("New maximum balanced accuracy — model saved.")
+
+        if epoch % 5 == 0:
+            checkpoint = get_training_checkpoint(epoch, model, optimizer, scheduler)
+            torch.save(checkpoint, os.path.join(model_dir, f"{save_base_name}-latest-checkpoint.pth"))
+            print("Checkpoint saved.")
+
+        running_val_loss.append(val_loss)
+        running_val_f1_score.append(val_f1)
+        running_val_balanced_accuracy.append(val_balanced_accuracy)
+
+        scheduler.step()
+        print("--------------------------------------------------------------------------------\n")
+
+    torch.save(checkpoint, os.path.join(model_dir, f"{save_base_name}-latest-checkpoint.pth"))
+
+
+if __name__ == "__main__":
+    main()

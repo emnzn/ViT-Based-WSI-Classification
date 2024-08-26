@@ -22,26 +22,49 @@ def get_args(arg_dir: str) -> Dict[str, Union[float, str]]:
 
     return args
 
-def save_args(
-    output_dir: str, 
-    args: Dict[str, Union[float, int]]
-    ) -> None:
-
+def save_args(log_dir: str, args: Dict[str, Union[float, str]]) -> None:
     """
-    Saves the arguments as a yaml file.
+    Saves arguments inside a log directory.
 
     Parameters
     ----------
-    output_dir: str
-        The path to the saved patches.
-    
+    log_dir: str
+        The destination directory to save the arguments to.
+
     args: Dict[str, Union[float, str]]
-        The arguments to save.
+        The arguments to be saved. The resulting yaml file will have a filename `run_config.yaml`.
     """
+
+    path = os.path.join(log_dir, "run_config.yaml")
+
+    training = {
+        "seed" : args["seed"],
+        "model": args["model"],
+        "epochs": args["epochs"],
+        "eta_min": args["eta_min"],
+        "trial_num": args["trial_num"],
+        "num_classes": args["num_classes"],
+        "learning_rate": args["learning_rate"],
+        "feature_extractor": args["feature_extractor"],
+        "grad_accumulation": args["grad_accumulation"]
+        }
     
-    os.makedirs(output_dir, exist_ok=True)
+    regularization = {
+        "weight_decay": args["weight_decay"],
+        "label_smoothing": args["label_smoothing"],
+        "dropout_probability": args["dropout_probability"]
+    }
 
-    output_dir = os.path.join(output_dir, f"config.yaml")
+    model = {
+        "variant": args["variant"],
+        "version": args["version"]
+    }
 
-    with open(output_dir, "w") as f:
-        yaml.dump(args, f)
+    organized_args = {
+        "training": training,
+        "regularization": regularization,
+        "model": model
+    }
+    
+    with open(path, "w") as f:
+        yaml.dump(organized_args, f)

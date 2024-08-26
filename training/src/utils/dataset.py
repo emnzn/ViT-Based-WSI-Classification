@@ -23,6 +23,17 @@ class WSIDataset(Dataset):
 
     mil: bool
         Whether compiling for a Multiple-Instance Based Model.
+
+    Returns
+    -------
+    embedding: torch.Tensor
+        The embedding of the WSI given a foundation model.
+    
+    label: str
+        The grade of the patient at the given datapoint.
+
+    patient_id: str
+        The patient id.
     """
 
     def __init__(

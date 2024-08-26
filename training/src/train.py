@@ -127,7 +127,7 @@ def main():
     model_dir = os.path.join("..", "assets", "models", experiment_id)
     log_dir = os.path.join("runs", experiment_id)
 
-    if args["version"]:
+    if args["version"] != "None":
         save_base_name = f"{args['model']}-{args['version']}-{args['variant']}"
     
     else:
@@ -139,8 +139,7 @@ def main():
     
     os.makedirs(model_dir, exist_ok=True)
 
-    # device = "cuda" if torch.cuda.is_available() else "cpu"
-    device = "mps"
+    device = "cuda" if torch.cuda.is_available() else "cpu"
 
     train_dataset = WSIDataset(data_dir=train_dir, label_dir=label_dir, mil=mil)
     val_dataset = WSIDataset(data_dir=val_dir, label_dir=label_dir, mil=mil)

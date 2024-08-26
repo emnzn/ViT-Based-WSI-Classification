@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 from torchvision.models.resnet import ResNet
 from torchvision.models.swin_transformer import SwinTransformer
 from torchvision.models import (
@@ -39,34 +40,34 @@ def swin_transformer(
     if version == "v1":
         if variant == "tiny":
             model = swin_t()
-            model.features[0][0] = torch.nn.Conv2d(1024, 96, kernel_size=(4, 4), stride=(4, 4))
-            model.head = torch.nn.Linear(in_features=768, out_features=num_classes)
+            model.features[0][0] = nn.Conv2d(1024, 96, kernel_size=(4, 4), stride=(4, 4))
+            model.head = nn.Linear(in_features=768, out_features=num_classes)
 
         if variant == "small":
             model = swin_s()
-            model.features[0][0] = torch.nn.Conv2d(1024, 96, kernel_size=(4, 4), stride=(4, 4))
-            model.head = torch.nn.Linear(in_features=768, out_features=num_classes)
+            model.features[0][0] = nn.Conv2d(1024, 96, kernel_size=(4, 4), stride=(4, 4))
+            model.head = nn.Linear(in_features=768, out_features=num_classes)
 
         if variant == "base":
             model = swin_b()
-            model.features[0][0] = torch.nn.Conv2d(1024, 128, kernel_size=(4, 4), stride=(4, 4))
-            model.head = torch.nn.Linear(in_features=1024, out_features=num_classes)
+            model.features[0][0] = nn.Conv2d(1024, 128, kernel_size=(4, 4), stride=(4, 4))
+            model.head = nn.Linear(in_features=1024, out_features=num_classes)
 
     elif version == "v2":
         if variant == "tiny":
             model = swin_v2_t()
-            model.features[0][0] = torch.nn.Conv2d(1024, 96, kernel_size=(4, 4), stride=(4, 4))
-            model.head = torch.nn.Linear(in_features=768, out_features=num_classes)
+            model.features[0][0] = nn.Conv2d(1024, 96, kernel_size=(4, 4), stride=(4, 4))
+            model.head = nn.Linear(in_features=768, out_features=num_classes)
 
         if variant == "small":
             model = swin_v2_s()
-            model.features[0][0] = torch.nn.Conv2d(1024, 96, kernel_size=(4, 4), stride=(4, 4))
-            model.head = torch.nn.Linear(in_features=768, out_features=num_classes)
+            model.features[0][0] = nn.Conv2d(1024, 96, kernel_size=(4, 4), stride=(4, 4))
+            model.head = nn.Linear(in_features=768, out_features=num_classes)
 
         if variant == "base":
             model = swin_v2_b()
-            model.features[0][0] = torch.nn.Conv2d(1024, 128, kernel_size=(4, 4), stride=(4, 4))
-            model.head = torch.nn.Linear(in_features=1024, out_features=num_classes)
+            model.features[0][0] = nn.Conv2d(1024, 128, kernel_size=(4, 4), stride=(4, 4))
+            model.head = nn.Linear(in_features=1024, out_features=num_classes)
 
     return model
 
@@ -97,28 +98,30 @@ def resnet(
 
     if variant == "resnet18":
         model = resnet18()
-        model.conv1 = torch.nn.Conv2d(1024, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
-        model.fc = torch.nn.Linear(in_features=512, out_features=num_classes)
+        model.conv1 = nn.Conv2d(1024, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+        model.fc = nn.Linear(in_features=512, out_features=num_classes)
 
     if variant == "resnet34":
         model = resnet34()
-        model.conv1 = torch.nn.Conv2d(1024, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
-        model.fc = torch.nn.Linear(in_features=512, out_features=num_classes)
+        model.conv1 = nn.Conv2d(1024, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+        model.fc = nn.Linear(in_features=512, out_features=num_classes)
 
     if variant == "resnet50":
         model = resnet50()
-        model.conv1 = torch.nn.Conv2d(1024, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
-        model.fc = torch.nn.Linear(in_features=2048, out_features=num_classes)
+        model.conv1 = nn.Conv2d(1024, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+        model.fc = nn.Linear(in_features=2048, out_features=num_classes)
 
     if variant == "resnet101":
         model = resnet101()
-        model.conv1 = torch.nn.Conv2d(1024, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
-        model.fc = torch.nn.Linear(in_features=2048, out_features=num_classes)
+        model.conv1 = nn.Conv2d(1024, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+        model.fc = nn.Linear(in_features=2048, out_features=num_classes)
 
     if variant == "resnet152":
         model = resnet152()
-        model.conv1 = torch.nn.Conv2d(1024, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
-        model.fc = torch.nn.Linear(in_features=2048, out_features=num_classes)
+        model.conv1 = nn.Conv2d(1024, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+        model.fc = nn.Linear(in_features=2048, out_features=num_classes)
+
+    model = convert_bn(model, num_groups=32)
 
     return model
 
@@ -140,4 +143,36 @@ def attention_mil(num_classes: int) -> AttentionBasedMIL:
         num_classes
         )
     
+    return model
+
+
+def convert_bn(
+    model: ResNet, 
+    num_groups: int
+    ) -> ResNet:
+    
+    """
+    Recursively replace all BatchNorm layers with GroupNorm in a given model.
+    
+    Parameters
+    ----------
+    model: ResNet
+        The model containing BatchNorm layers.
+    
+    num_groups: int 
+        The number of groups to be used in GroupNorm.
+        
+    Returns
+    -------
+    model: ResNet
+        The model with batchnorm layers replaced to groupnorm.
+    """
+    for name, module in model.named_children():
+        if isinstance(module, nn.BatchNorm2d):
+            num_channels = module.num_features
+            setattr(model, name, nn.GroupNorm(num_groups=num_groups, num_channels=num_channels))
+
+        else:
+            convert_bn(module, num_groups)
+
     return model

@@ -6,4 +6,5 @@
 *.xlsx
 *data/
 CLAM/
+**/runs/*
 **/__pycache__/*

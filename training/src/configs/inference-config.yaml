@@ -1,0 +1,7 @@
+trial_num: 5
+num_classes: 2
+feature_extractor: UNI
+model: attention-mil
+weights: "highest-balanced-accuracy.pth"
+version:
+variant:

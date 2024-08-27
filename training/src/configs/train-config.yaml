@@ -1,8 +1,7 @@
 # Training
 seed: 42
-epochs: 50
-trial_num: 1
-model: resnet
+epochs: 20
+trial_num: 5
 num_classes: 2
 eta_min: 1.0e-6
 learning_rate: 1.0e-4
@@ -10,10 +9,11 @@ grad_accumulation: 12
 feature_extractor: UNI
 
 # Regularization
-weight_decay: 0.0001
+weight_decay: 1.0e-5
 label_smoothing: 0.0
-dropout_probability: 0.1
+dropout_probability: 0.0
 
 # Model
+model: resnet
+version:
 variant: resnet18
-version: None

@@ -12,6 +12,7 @@ from .abmil import AttentionBasedMIL
 def swin_transformer(
     version: str,
     variant: str,
+    dropout: float,
     num_classes: int
     ) -> SwinTransformer:
 
@@ -27,6 +28,9 @@ def swin_transformer(
     variant: str
         The variant of the Swin Transformer to be initialized.
         Must be one of [tiny, small, base].
+
+    dropout: float
+        The dropout probability.
 
     num_classes: int
         The number of classes to be predicted.
@@ -45,33 +49,33 @@ def swin_transformer(
 
     if version == "v1":
         if variant == "tiny":
-            model = swin_t()
+            model = swin_t(dropout=dropout, attention_dropout=dropout)
             model.features[0][0] = nn.Conv2d(1024, 96, kernel_size=(4, 4), stride=(4, 4))
             model.head = nn.Linear(in_features=768, out_features=num_classes)
 
         if variant == "small":
-            model = swin_s()
+            model = swin_s(dropout=dropout, attention_dropout=dropout)
             model.features[0][0] = nn.Conv2d(1024, 96, kernel_size=(4, 4), stride=(4, 4))
             model.head = nn.Linear(in_features=768, out_features=num_classes)
 
         if variant == "base":
-            model = swin_b()
+            model = swin_b(dropout=dropout, attention_dropout=dropout)
             model.features[0][0] = nn.Conv2d(1024, 128, kernel_size=(4, 4), stride=(4, 4))
             model.head = nn.Linear(in_features=1024, out_features=num_classes)
 
     elif version == "v2":
         if variant == "tiny":
-            model = swin_v2_t()
+            model = swin_v2_t(dropout=dropout, attention_dropout=dropout)
             model.features[0][0] = nn.Conv2d(1024, 96, kernel_size=(4, 4), stride=(4, 4))
             model.head = nn.Linear(in_features=768, out_features=num_classes)
 
         if variant == "small":
-            model = swin_v2_s()
+            model = swin_v2_s(dropout=dropout, attention_dropout=dropout)
             model.features[0][0] = nn.Conv2d(1024, 96, kernel_size=(4, 4), stride=(4, 4))
             model.head = nn.Linear(in_features=768, out_features=num_classes)
 
         if variant == "base":
-            model = swin_v2_b()
+            model = swin_v2_b(dropout=dropout, attention_dropout=dropout)
             model.features[0][0] = nn.Conv2d(1024, 128, kernel_size=(4, 4), stride=(4, 4))
             model.head = nn.Linear(in_features=1024, out_features=num_classes)
 

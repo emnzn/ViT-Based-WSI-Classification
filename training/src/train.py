@@ -12,8 +12,7 @@ from sklearn.metrics import balanced_accuracy_score, f1_score
 
 from utils import (
     WSIDataset, get_args, save_args,
-    set_seed, resnet, attention_mil,
-    swin_transformer, ResNet, SwinTransformer,
+    get_model, set_seed, ResNet, SwinTransformer,
     AttentionBasedMIL, get_training_checkpoint
 )
 
@@ -171,31 +170,18 @@ def main():
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    train_dataset = WSIDataset(data_dir=train_dir, label_dir=label_dir, mil=mil)
-    val_dataset = WSIDataset(data_dir=val_dir, label_dir=label_dir, mil=mil)
+    train_dataset = WSIDataset(train_dir, label_dir, mil, args["pad"], args["target_shape"])
+    val_dataset = WSIDataset(val_dir, label_dir, mil, args["pad"], args["target_shape"])
 
-    train_loader = DataLoader(train_dataset, batch_size=1, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=1, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=args["batch_size"], shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=args["batch_size"], shuffle=False)
 
-    if mil:
-        model = attention_mil(num_classes=args["num_classes"]).to(device)
-        save_base_name = args["model"]
+    model, save_base_name = get_model(args)
+    model = model.to(device)
 
-    if args["model"] == "resnet":
-        model = resnet(
-            variant=args["variant"], num_classes=args["num_classes"]
-            ).to(device)
-        
-        save_base_name = f"{args['variant']}"
+    train_criterion = nn.CrossEntropyLoss(label_smoothing=args["label_smoothing"])
+    val_criterion = nn.CrossEntropyLoss()
 
-    if args["model"] == "swin":
-        model = swin_transformer(
-            version=args["version"], variant=args["variant"], dropout=args["dropout_probability"], num_classes=args["num_classes"]
-            ).to(device)
-        
-        save_base_name = f"{args['model']}-{args['version']}-{args['variant']}"
-
-    criterion = nn.CrossEntropyLoss(label_smoothing=args["label_smoothing"])
     optimizer = optim.AdamW(model.parameters(), lr=args["learning_rate"], weight_decay=args["weight_decay"])
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, args["epochs"], eta_min=args["eta_min"])
 
@@ -208,7 +194,7 @@ def main():
         print(f"Epoch [{epoch}/{args['epochs']}]")
 
         train_loss, train_f1, train_balanced_accuracy = train(
-            dataloader=train_loader, criterion=criterion, optimizer=optimizer, 
+            dataloader=train_loader, criterion=train_criterion, optimizer=optimizer, 
             mil=mil, model=model, device=device, grad_accumulation=args["grad_accumulation"]
             )
 
@@ -220,7 +206,7 @@ def main():
         writer.add_scalar("Train/Balanced-Accuracy", train_balanced_accuracy, epoch)
 
         val_loss, val_f1, val_balanced_accuracy = validate(
-            dataloader=val_loader, criterion=criterion, model=model, mil=mil, device=device
+            dataloader=val_loader, criterion=val_criterion, model=model, mil=mil, device=device
             )
         
         print("Validation Statistics:")

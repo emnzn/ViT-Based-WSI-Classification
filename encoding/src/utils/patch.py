@@ -91,7 +91,7 @@ def extract_coords(img_name: List[str]) -> Tuple[int]:
 def get_background_color(
     image: np.ndarray,
     threshold: int = 230
-    ) -> List[int]:
+    ) -> Tuple[int]:
 
     """
     Gets the average background color of the image.
@@ -106,7 +106,7 @@ def get_background_color(
 
     Returns
     -------
-    background_color: List[int]
+    background_color: Tuple[int]
         The average background color of the whole slide image.
     """
 

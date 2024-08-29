@@ -38,15 +38,17 @@ def save_args(log_dir: str, args: Dict[str, Union[float, str]]) -> None:
     path = os.path.join(log_dir, "run_config.yaml")
 
     training = {
-        "seed" : args["seed"],
-        "model": args["model"],
+        "pad": args["pad"],
+        "seed": args["seed"],
         "epochs": args["epochs"],
         "eta_min": args["eta_min"],
+        "batch_size": args["batch_size"],
         "trial_num": args["trial_num"],
         "num_classes": args["num_classes"],
         "learning_rate": args["learning_rate"],
         "feature_extractor": args["feature_extractor"],
-        "grad_accumulation": args["grad_accumulation"]
+        "grad_accumulation": args["grad_accumulation"],
+        "target_shape": args["target_shape"]
         }
     
     regularization = {
@@ -56,8 +58,10 @@ def save_args(log_dir: str, args: Dict[str, Union[float, str]]) -> None:
     }
 
     model = {
+        "model": args["model"],
         "variant": args["variant"],
-        "version": args["version"]
+        "version": args["version"],
+        "normalization_method": args["normalization_method"]
     }
 
     organized_args = {

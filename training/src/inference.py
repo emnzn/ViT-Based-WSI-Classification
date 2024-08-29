@@ -10,8 +10,8 @@ from sklearn.metrics import balanced_accuracy_score, f1_score
 
 from utils import (
     WSIDataset, get_args, save_results,
-    resnet, attention_mil, swin_transformer,
-    ResNet, SwinTransformer, AttentionBasedMIL,
+    get_model, ResNet, SwinTransformer, 
+    AttentionBasedMIL,
 )
 
 @torch.no_grad()
@@ -120,28 +120,13 @@ def main():
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    inference_dataset = WSIDataset(data_dir=inference_dir, label_dir=label_dir, mil=mil)
-    inference_loader = DataLoader(inference_dataset, batch_size=1, shuffle=False)
+    inference_dataset = WSIDataset(inference_dir, label_dir, mil, args["pad"], args["target_shape"])
+    inference_loader = DataLoader(inference_dataset, batch_size=args["batch_size"], shuffle=False)
 
-    if mil:
-        model = attention_mil(num_classes=args["num_classes"]).to(device)
-        model_base_name = args["model"]
+    model, save_base_name = get_model(args)
+    model = model.to(device)
 
-    if args["model"] == "resnet":
-        model = resnet(
-            variant=args["variant"], num_classes=args["num_classes"]
-            ).to(device)
-        
-        model_base_name = f"{args['variant']}"
-
-    if args["model"] == "swin":
-        model = swin_transformer(
-            version=args["version"], variant=args["variant"], dropout=args["dropout_probability"], num_classes=args["num_classes"]
-            ).to(device)
-        
-        model_base_name = f"{args['model']}-{args['version']}-{args['variant']}"
-
-    weights_dir = os.path.join(model_dir, f"{model_base_name}-{args['weights']}")
+    weights_dir = os.path.join(model_dir, f"{save_base_name}-{args['weights']}")
     weights = torch.load(weights_dir, map_location=torch.device(device), weights_only=True)
     model.load_state_dict(weights)
 
@@ -149,7 +134,7 @@ def main():
 
     average_loss, average_f1, average_balanced_accuracy = inference(
         dataloader=inference_loader, criterion=criterion, model=model, mil=mil,
-        device=device, save_dir=save_dir, save_filename=model_base_name
+        device=device, save_dir=save_dir, save_filename=save_base_name
     )
 
     print("Inference Statistics:")

@@ -1,6 +1,11 @@
-trial_num: 1
+pad: True
+trial_num: 5
+batch_size: 1
 num_classes: 2
 feature_extractor: UNI
+target_shape: [350, 224]
+normalization_method: batch
+
 model: resnet
 weights: "highest-balanced-accuracy.pth"
 version:

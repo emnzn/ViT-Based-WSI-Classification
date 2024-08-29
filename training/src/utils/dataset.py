@@ -1,6 +1,6 @@
 import os
-from typing import Dict
 from pathlib import Path
+from typing import Dict, List
 
 import torch
 import numpy as np
@@ -24,6 +24,13 @@ class WSIDataset(Dataset):
     mil: bool
         Whether compiling for a Multiple-Instance Based Model.
 
+    pad: bool
+        Wether to pad inputs to a pre-determined size.
+
+    target_shape: List[int]
+        The target shape to pad images into.
+        Must be in the form (width, height).
+
     Returns
     -------
     embedding: torch.Tensor
@@ -40,13 +47,17 @@ class WSIDataset(Dataset):
         self, 
         data_dir: str, 
         label_dir: str,
-        mil: bool
+        mil: bool,
+        pad: bool,
+        target_shape: List[int]
         ):
 
         self.data_dir = data_dir
         self.filenames = os.listdir(data_dir)
         self.labels = self.generate_labels(label_dir)
         self.mil = mil
+        self.pad = pad
+        self.target_shape = target_shape
 
         assert all([Path(i).stem in self.labels for i in self.filenames]), "All patient ids must have a label"
 
@@ -65,6 +76,34 @@ class WSIDataset(Dataset):
         labels = {patient_id: grade for patient_id, grade in zip(ids, grades)}
 
         return labels
+
+    def pad_embedding(
+        self, 
+        embedding: torch.Tensor, 
+        target_shape: List[int]
+        ) -> np.ndarray:
+
+        """
+        Pads the embedding to a target shape.
+        The tensor must be of shape [C, H, W]
+        """
+
+        current_shape = embedding.shape[1:]
+
+        delta_h = target_shape[0] - current_shape[0]
+        delta_w = target_shape[1] - current_shape[1]
+
+        pad_top = delta_h // 2
+        pad_bottom = delta_h - pad_top
+        
+        pad_left = delta_w // 2
+        pad_right = delta_w - pad_left
+
+        m = torch.nn.ZeroPad2d(padding=(pad_left, pad_right, pad_top, pad_bottom))
+
+        padded_embedding = m(embedding)
+
+        return padded_embedding
     
     def __len__(self):
         return len(self.filenames)
@@ -75,13 +114,14 @@ class WSIDataset(Dataset):
         label = self.labels[patient_id]
 
         embedding_path = os.path.join(self.data_dir, filename)
-        embedding = torch.tensor(np.load(embedding_path)) # [height, width, channels]
+        embedding = torch.tensor(np.load(embedding_path)).permute(2, 0, 1) # [channels, height, width]
+
+        if self.pad:
+            embedding = self.pad_embedding(embedding, self.target_shape)
 
         if self.mil:
-            height, width, channels = embedding.shape
-            embedding = embedding.reshape(height * width, channels)
-
-        else:
-            embedding = embedding.permute(2, 0, 1) # [channels, height, width]
+            channels, height, width = embedding.shape
+            embedding = embedding.permute(1, 2, 0).reshape(height * width, channels)
 
         return embedding, label, patient_id
+

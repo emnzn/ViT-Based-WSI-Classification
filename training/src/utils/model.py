@@ -1,4 +1,5 @@
-import torch
+from typing import Dict, Any, Union
+
 import torch.nn as nn
 from torchvision.models.resnet import ResNet
 from torchvision.models.swin_transformer import SwinTransformer
@@ -84,7 +85,8 @@ def swin_transformer(
 
 def resnet(
     variant: str,
-    num_classes: int
+    num_classes: int,
+    normalization_method: str
     ) -> ResNet:
 
     """
@@ -111,6 +113,11 @@ def resnet(
 
     assert variant in valid_variants, assertion_message
 
+    valid_normalization_methods = ["batch", "group"]
+    assertion_message = f"normalization_method must be one of {valid_normalization_methods}"
+    
+    assert normalization_method in valid_normalization_methods, assertion_message
+
     if variant == "resnet18":
         model = resnet18()
         model.conv1 = nn.Conv2d(1024, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
@@ -136,7 +143,8 @@ def resnet(
         model.conv1 = nn.Conv2d(1024, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
         model.fc = nn.Linear(in_features=2048, out_features=num_classes)
 
-    model = convert_bn(model, num_groups=32)
+    if normalization_method == "group":
+        model = convert_bn(model, num_groups=32)
 
     return model
 
@@ -191,3 +199,33 @@ def convert_bn(
             convert_bn(module, num_groups)
 
     return model
+
+
+def get_model(
+    args: Dict[str, Any]
+    ) -> Union[ResNet, SwinTransformer, AttentionBasedMIL]:
+
+    """
+    Returns model and save path given a set of arguments.
+    """
+
+    if args["model"] == "attention-mil":
+        model = attention_mil(num_classes=args["num_classes"])
+        save_base_name = args["model"]
+
+    if args["model"] == "resnet":
+        model = resnet(
+            variant=args["variant"], num_classes=args["num_classes"], 
+            normalization_method=args["normalization_method"]
+            )
+        
+        save_base_name = f"{args['variant']}"
+
+    if args["model"] == "swin":
+        model = swin_transformer(
+            version=args["version"], variant=args["variant"], dropout=args["dropout_probability"], num_classes=args["num_classes"]
+            )
+        
+        save_base_name = f"{args['model']}-{args['version']}-{args['variant']}"
+
+    return model, save_base_name

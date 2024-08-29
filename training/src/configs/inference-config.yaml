@@ -1,5 +1,4 @@
 pad: True
-trial_num: 5
 batch_size: 1
 num_classes: 2
 feature_extractor: UNI

@@ -109,35 +109,59 @@ def main():
     args = get_args(config_dir)
     mil = True if args["model"] == "attention-mil" else False
 
-    root_data_dir = os.path.join("..", "data", args["feature_extractor"], f"trial-{args['trial_num']}")
-    inference_dir = os.path.join(root_data_dir, "test")
+    root_data_dir = os.path.join("..", "data", args["feature_extractor"])
+    num_trials = len(os.listdir(root_data_dir))
 
-    label_dir = os.path.join("..", "data", "labels.csv")
-    model_dir = os.path.join("..", "assets", "model-weights", f"trial-{args['trial_num']}")
-    save_dir = os.path.join("..", "assets", "inference-results", f"trial-{args['trial_num']}")
+    losses = []
+    f1_scores = []
+    balanced_accuracies = []
 
-    os.makedirs(save_dir, exist_ok=True)
+    for trial_num in range(1, num_trials + 1):
+        print(f"Trial [{trial_num}/{num_trials}]")
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+        trial_dir = os.path.join(root_data_dir, f"trial-{trial_num}")
+        inference_dir = os.path.join(trial_dir, "test")
 
-    inference_dataset = WSIDataset(inference_dir, label_dir, mil, args["pad"], args["target_shape"])
-    inference_loader = DataLoader(inference_dataset, batch_size=args["batch_size"], shuffle=False)
+        label_dir = os.path.join("..", "data", "labels.csv")
+        model_dir = os.path.join("..", "assets", "model-weights", f"trial-{trial_num}")
+        save_dir = os.path.join("..", "assets", "inference-results", f"trial-{trial_num}")
 
-    model, save_base_name = get_model(args)
-    model = model.to(device)
+        os.makedirs(save_dir, exist_ok=True)
 
-    weights_dir = os.path.join(model_dir, f"{save_base_name}-{args['weights']}")
-    weights = torch.load(weights_dir, map_location=torch.device(device), weights_only=True)
-    model.load_state_dict(weights)
+        device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    criterion = nn.CrossEntropyLoss()
+        inference_dataset = WSIDataset(inference_dir, label_dir, mil, args["pad"], args["target_shape"])
+        inference_loader = DataLoader(inference_dataset, batch_size=args["batch_size"], shuffle=False)
 
-    average_loss, average_f1, average_balanced_accuracy = inference(
-        dataloader=inference_loader, criterion=criterion, model=model, mil=mil,
-        device=device, save_dir=save_dir, save_filename=save_base_name
-    )
+        model, save_base_name = get_model(args)
+        model = model.to(device)
 
-    print("Inference Statistics:")
+        weights_dir = os.path.join(model_dir, f"{save_base_name}-{args['weights']}")
+        weights = torch.load(weights_dir, map_location=torch.device(device), weights_only=True)
+        model.load_state_dict(weights)
+
+        criterion = nn.CrossEntropyLoss()
+
+        trial_loss, trial_f1, trial_balanced_accuracy = inference(
+            dataloader=inference_loader, criterion=criterion, model=model, mil=mil,
+            device=device, save_dir=save_dir, save_filename=save_base_name
+        )
+
+        losses.append(trial_loss)
+        f1_scores.append(trial_f1)
+        balanced_accuracies.append(trial_balanced_accuracy)
+
+        print("Inference Statistics:")
+        print(f"Loss: {trial_loss:.4f} | F1 Score: {trial_f1:.4f} | Balanced Accuracy: {trial_balanced_accuracy:.4f}\n")
+
+        print("-------------------------------------------------------------\n")
+
+
+    average_loss = sum(losses) / len(losses)
+    average_f1 = sum(f1_scores) / len(f1_scores)
+    average_balanced_accuracy = sum(balanced_accuracies) / len(balanced_accuracies)
+
+    print("Summary:")
     print(f"Loss: {average_loss:.4f} | F1 Score: {average_f1:.4f} | Balanced Accuracy: {average_balanced_accuracy:.4f}\n")
 
 

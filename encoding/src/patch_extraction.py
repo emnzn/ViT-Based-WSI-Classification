@@ -49,6 +49,8 @@ def main():
             os.path.join(output_dir, image_name)
         )
 
+        break
+
 
 if __name__ == "__main__":
     main()

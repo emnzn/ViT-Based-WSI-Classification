@@ -24,18 +24,20 @@ def embed_patches(
 
     results = {
         "coords":[],
-        "embedding": []
+        "embedding": [],
+        "valid_img": []
     }
 
     model.eval()
 
     with torch.inference_mode():
-        for img, coords in tqdm(dataloader, desc="Embedding Patches"):
+        for img, coords, valid_img in tqdm(dataloader, desc="Embedding Patches"):
             img = img.to(device)
             embedding = model(img).cpu().numpy()
 
             results["coords"].extend(coords)
             results["embedding"].extend(embedding)
+            results["valid_img"].extend(valid_img)
 
     save_embeddings(results, save_dir)
 

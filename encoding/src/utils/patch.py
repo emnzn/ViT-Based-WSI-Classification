@@ -4,6 +4,7 @@ from typing import List, Tuple
 
 import cv2
 import numpy as np
+from tqdm import tqdm
 from empatches import EMPatches
 
 
@@ -64,15 +65,19 @@ def save_patches(
     """
 
     os.makedirs(output_dir, exist_ok=True)
+    pbar = tqdm(zip(image_patches, coordinates), desc="Patching in progress", total=len(coordinates))
 
-    for patch, coordinates in zip(image_patches, coordinates):
+    for patch, coordinates in pbar:
         patch = cv2.cvtColor(patch, cv2.COLOR_RGB2BGR)
-        y1, y2, x1, x2 = coordinates
+        is_valid = valid_patch(patch)
 
-        patch_name = f"patch-{y1}-{y2}-{x1}-{x2}.png"
-        patch_path = os.path.join(output_dir, patch_name)
+        if is_valid:
+            y1, y2, x1, x2 = coordinates
 
-        cv2.imwrite(patch_path, patch)
+            patch_name = f"patch-{y1}-{y2}-{x1}-{x2}.png"
+            patch_path = os.path.join(output_dir, patch_name)
+
+            cv2.imwrite(patch_path, patch)
 
 
 def extract_coords(img_name: List[str]) -> Tuple[int]:
@@ -194,3 +199,24 @@ def pad_img(img: np.ndarray, target_shape: Tuple[int]) -> np.ndarray:
         )
 
     return padded_img
+
+
+def valid_patch(img: np.ndarray, threshold: int = 230) -> bool:
+
+    """
+    Checks whether a patch is mostly background.
+    Returns false if the patch contains 75% or more background pixels.
+    """
+
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    _, background_mask = cv2.threshold(gray, threshold, 255, cv2.THRESH_BINARY)
+
+    white_pixels = np.sum(background_mask == 255)
+    total_pixels = img.shape[0] * img.shape[1]
+
+    background_composition = white_pixels / total_pixels
+
+    is_valid = bool(background_composition < 0.75)
+
+    return is_valid
+    

@@ -1,8 +1,10 @@
 .env
+*.sh
 *.pth
 *.bin
 *.jpg
 *.png
+*.pbs
 *.xlsx
 *data/
 CLAM/

@@ -1,0 +1,13 @@
+{
+  "pad": false,
+  "batch_size": 1,
+  "embedding_type": "isolated",
+  "num_classes": 2,
+  "feature_extractor": "UNI",
+  "target_shape": null,
+  "normalization_method": null,
+  "model": "attention-mil",
+  "weights": "highest-balanced-accuracy.pth",
+  "version": null,
+  "variant": null
+}

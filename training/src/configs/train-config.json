@@ -1,0 +1,22 @@
+{
+    "pad": false,
+    "target_shape": null,
+    "embedding_type": "stitched",
+    "seed": 42,
+    "epochs": 20,
+    "split_num": 1,
+    "batch_size": 8,
+    "num_classes": 2,
+    "eta_min": 1.0e-6,
+    "learning_rate": 1.0e-4,
+    "grad_accumulation": 1,
+    "feature_extractor": "UNI",
+    "weight_decay": 1.0e-03,
+    "label_smoothing": 0.2,
+    "dropout_probability": null,
+    "model": "resnet",
+    "version": null,
+    "variant": "resnet18",
+    "normalization_method": "batch"
+  }
+  

@@ -27,6 +27,17 @@ class WSIDataset(Dataset):
     pad: bool
         Wether to pad inputs to a pre-determined size.
 
+    embedding_type: str
+        One of [stitched, isolated].
+
+        `Isolated` refers to embeddings that have not been stitched back together.
+        This means that each instance is an embedding of a tissue region.
+
+        Alternatively, `stitched` refers to embeddings that maintain the spatial relationships
+        found in the original WSI. The embedding of each instance is stitched together to 
+        create a smaller representation of the entire WSI, whereby the embedding is placed at
+        the channel dimension.
+
     target_shape: List[int]
         The target shape to pad images into.
         Must be in the form (width, height).
@@ -49,6 +60,7 @@ class WSIDataset(Dataset):
         label_dir: str,
         mil: bool,
         pad: bool,
+        embedding_type: str,
         target_shape: List[int]
         ):
 
@@ -57,6 +69,7 @@ class WSIDataset(Dataset):
         self.labels = self.generate_labels(label_dir)
         self.mil = mil
         self.pad = pad
+        self.embedding_type = embedding_type
         self.target_shape = target_shape
 
         assert all([Path(i).stem in self.labels for i in self.filenames]), "All patient ids must have a label"
@@ -114,14 +127,19 @@ class WSIDataset(Dataset):
         label = self.labels[patient_id]
 
         embedding_path = os.path.join(self.data_dir, filename)
-        embedding = torch.tensor(np.load(embedding_path)).permute(2, 0, 1) # [channels, height, width]
 
-        if self.pad:
-            embedding = self.pad_embedding(embedding, self.target_shape)
+        if self.embedding_type == "isolated":
+            embedding = torch.tensor(np.load(embedding_path))
 
-        if self.mil:
-            channels, height, width = embedding.shape
-            embedding = embedding.permute(1, 2, 0).reshape(height * width, channels)
+        else:
+            embedding = torch.tensor(np.load(embedding_path)).permute(2, 0, 1) # [channels, height, width]
+
+            if self.pad:
+                embedding = self.pad_embedding(embedding, self.target_shape)
+
+            if self.mil:
+                channels, height, width = embedding.shape
+                embedding = embedding.permute(1, 2, 0).reshape(height * width, channels)
 
         return embedding, label, patient_id
 

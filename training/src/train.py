@@ -150,17 +150,17 @@ def validate(
 
 
 def main():
-    config_dir = os.path.join("configs", "train-config.yaml")
+    config_dir = os.path.join("configs", "train-config.json")
     args = get_args(config_dir)
     mil = True if args["model"] == "attention-mil" else False
     
-    root_data_dir = os.path.join("..", "data", args["feature_extractor"], f"trial-{args['trial_num']}")
+    root_data_dir = os.path.join("..", "data", args["feature_extractor"], args["embedding_type"], f"split-{args['split_num']}")
     train_dir = os.path.join(root_data_dir, "train")
     val_dir = os.path.join(root_data_dir, "val")
 
     label_dir = os.path.join("..", "data", "labels.csv")
-    model_dir = os.path.join("..", "assets", "model-weights", f"trial-{args['trial_num']}")
-    log_dir = os.path.join("runs", f"trial-{args['trial_num']}", args["model"])
+    model_dir = os.path.join("..", "assets", "model-weights", args["embedding_type"], f"split-{args['split_num']}")
+    log_dir = os.path.join("runs", args["embedding_type"], f"split-{args['split_num']}", args["model"])
     
     writer = SummaryWriter(log_dir)
     save_args(log_dir, args)
@@ -170,8 +170,8 @@ def main():
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    train_dataset = WSIDataset(train_dir, label_dir, mil, args["pad"], args["target_shape"])
-    val_dataset = WSIDataset(val_dir, label_dir, mil, args["pad"], args["target_shape"])
+    train_dataset = WSIDataset(train_dir, label_dir, mil, args["pad"], args["embedding_type"], args["target_shape"])
+    val_dataset = WSIDataset(val_dir, label_dir, mil, args["pad"], args["embedding_type"], args["target_shape"])
 
     train_loader = DataLoader(train_dataset, batch_size=args["batch_size"], shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=args["batch_size"], shuffle=False)
@@ -198,7 +198,7 @@ def main():
             mil=mil, model=model, device=device, grad_accumulation=args["grad_accumulation"]
             )
 
-        print("Train Statistics:")
+        print("\nTrain Statistics:")
         print(f"Loss: {train_loss:.4f} | F1 score: {train_f1:.4f} | Balanced Accuracy: {train_balanced_accuracy:.4f}\n")
 
         writer.add_scalar("Train/Loss", train_loss, epoch)
@@ -209,7 +209,7 @@ def main():
             dataloader=val_loader, criterion=val_criterion, model=model, mil=mil, device=device
             )
         
-        print("Validation Statistics:")
+        print("\nValidation Statistics:")
         print(f"Loss: {val_loss:.4f} | F1 Score: {val_f1:.4f} | Balanced Accuracy: {val_balanced_accuracy:.4f}\n")
 
         writer.add_scalar("Validation/Loss", val_loss, epoch)

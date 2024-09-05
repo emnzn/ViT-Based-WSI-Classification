@@ -105,32 +105,32 @@ def inference(
 
 
 def main():
-    config_dir = os.path.join("configs", "inference-config.yaml")
+    config_dir = os.path.join("configs", "inference-config.json")
     args = get_args(config_dir)
     mil = True if args["model"] == "attention-mil" else False
 
-    root_data_dir = os.path.join("..", "data", args["feature_extractor"])
-    num_trials = len(os.listdir(root_data_dir))
+    root_data_dir = os.path.join("..", "data", args["feature_extractor"], args["embedding_type"])
+    num_splits = len(os.listdir(root_data_dir))
 
     losses = []
     f1_scores = []
     balanced_accuracies = []
 
-    for trial_num in range(1, num_trials + 1):
-        print(f"Trial [{trial_num}/{num_trials}]")
+    for split_num in range(1, num_splits + 1):
+        print(f"Trial [{split_num}/{num_splits}]")
 
-        trial_dir = os.path.join(root_data_dir, f"trial-{trial_num}")
+        trial_dir = os.path.join(root_data_dir, f"split-{split_num}")
         inference_dir = os.path.join(trial_dir, "test")
 
         label_dir = os.path.join("..", "data", "labels.csv")
-        model_dir = os.path.join("..", "assets", "model-weights", f"trial-{trial_num}")
-        save_dir = os.path.join("..", "assets", "inference-results", f"trial-{trial_num}")
+        model_dir = os.path.join("..", "assets", "model-weights", args["embedding_type"], f"split-{split_num}")
+        save_dir = os.path.join("..", "assets", "inference-results", args["embedding_type"], f"split-{split_num}")
 
         os.makedirs(save_dir, exist_ok=True)
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        inference_dataset = WSIDataset(inference_dir, label_dir, mil, args["pad"], args["target_shape"])
+        inference_dataset = WSIDataset(inference_dir, label_dir, mil, args["pad"], args["embedding_type"], args["target_shape"])
         inference_loader = DataLoader(inference_dataset, batch_size=args["batch_size"], shuffle=False)
 
         model, save_base_name = get_model(args)

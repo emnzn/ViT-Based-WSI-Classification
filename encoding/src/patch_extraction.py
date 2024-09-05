@@ -1,12 +1,8 @@
-# Standard Library Imports
 import os
 from pathlib import Path
 
-# Third-Party Imports
 import pyvips
-from tqdm import tqdm
 
-# Local Imports
 from utils import (
     pad_img,
     get_args, 

@@ -77,7 +77,7 @@ def save_patches(
             patch_name = f"patch-{y1}-{y2}-{x1}-{x2}.png"
             patch_path = os.path.join(output_dir, patch_name)
 
-            cv2.imwrite(patch_path, patch)
+            cv2.imwrite(patch_path, patch, [cv2.IMWRITE_PNG_COMPRESSION, 5])
 
 
 def extract_coords(img_name: List[str]) -> Tuple[int]:
@@ -91,36 +91,6 @@ def extract_coords(img_name: List[str]) -> Tuple[int]:
     coords = (y1, y2, x1, x2)
 
     return coords
-
-
-def get_background_color(
-    image: np.ndarray,
-    threshold: int = 230
-    ) -> Tuple[int]:
-
-    """
-    Gets the average background color of the image.
-
-    Parameters
-    ----------
-    image: np.array
-        The whole slide image in the form of a numpy array.
-
-    threshold: int
-        The threshold for binary conversion. (default: 230)
-
-    Returns
-    -------
-    background_color: Tuple[int]
-        The average background color of the whole slide image.
-    """
-
-    gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-    _, mask = cv2.threshold(gray, threshold, 255, cv2.THRESH_BINARY)
-    background_intensity = np.mean(image[mask == 255])
-    background_color = (int(background_intensity),) * 3
-
-    return background_color
 
 
 def get_nearest_multiple(source, target) -> int:
@@ -179,8 +149,6 @@ def pad_img(img: np.ndarray, target_shape: Tuple[int]) -> np.ndarray:
     Pads the image to a target shape.
     """
 
-    bg_color = get_background_color(img)
-
     current_shape = img.shape[:2]
 
     delta_h = target_shape[0] - current_shape[0]
@@ -195,7 +163,7 @@ def pad_img(img: np.ndarray, target_shape: Tuple[int]) -> np.ndarray:
     padded_img = cv2.copyMakeBorder(
         img, pad_top, pad_bottom, 
         pad_left, pad_right, 
-        borderType=cv2.BORDER_CONSTANT, value=bg_color
+        borderType=cv2.BORDER_CONSTANT, value=(255, 255, 255)
         )
 
     return padded_img

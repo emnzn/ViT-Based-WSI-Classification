@@ -22,5 +22,4 @@ def save_embeddings(
     df = pd.DataFrame(results)
     df["processed_coords"] = df["coords"].map(lambda x: extract_coords(x))
     df = df.sort_values(by="processed_coords", key=lambda col: col.map(lambda x: (x[2], x[3], x[0], x[1])))
-    df["validity"] = df["validity"].map(lambda x: bool(x))
     df.to_parquet(save_dir, index=False)

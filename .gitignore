@@ -1,4 +1,5 @@
 .env
+*.gz
 *.sh
 *.pth
 *.bin

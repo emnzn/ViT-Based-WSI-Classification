@@ -5,6 +5,7 @@ from typing import Dict, List
 import torch
 import numpy as np
 import pandas as pd
+import albumentations as A
 from torch.utils.data import Dataset
 
 
@@ -26,6 +27,10 @@ class WSIDataset(Dataset):
 
     pad: bool
         Wether to pad inputs to a pre-determined size.
+
+    augment: bool
+        Whether to perform augmentations.
+        If True, will shift and rotate the stitched embedding.
 
     embedding_type: str
         One of [stitched, isolated].
@@ -60,6 +65,7 @@ class WSIDataset(Dataset):
         label_dir: str,
         mil: bool,
         pad: bool,
+        augment: bool,
         embedding_type: str,
         target_shape: List[int]
         ):
@@ -69,8 +75,21 @@ class WSIDataset(Dataset):
         self.labels = self.generate_labels(label_dir)
         self.mil = mil
         self.pad = pad
+        self.augment = augment
         self.embedding_type = embedding_type
         self.target_shape = target_shape
+
+        self.transforms = A.Compose([
+            A.HorizontalFlip(p=0.5),
+            A.VerticalFlip(p=0.5),
+            A.Affine(
+                translate_px=(-100, 100),
+                rotate=0,
+                shear=0,
+                scale=1,
+                cval=0
+                )
+            ])
 
         assert all([Path(i).stem in self.labels for i in self.filenames]), "All patient ids must have a label"
 
@@ -132,7 +151,12 @@ class WSIDataset(Dataset):
             embedding = torch.tensor(np.load(embedding_path))
 
         else:
-            embedding = torch.tensor(np.load(embedding_path)).permute(2, 0, 1) # [channels, height, width]
+            embedding = np.load(embedding_path)
+            
+            if self.augment:
+                embedding = self.transforms(image=embedding)["image"]
+
+            embedding = torch.tensor(embedding).permute(2, 0, 1) # [channels, height, width]
 
             if self.pad:
                 embedding = self.pad_embedding(embedding, self.target_shape)

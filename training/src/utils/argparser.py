@@ -40,6 +40,7 @@ def save_args(log_dir: str, args: Dict[str, Union[float, str]]) -> None:
     organized_args = {
         "dataset": {
             "pad": args["pad"],
+            "augment": args["augment"],
             "split_num": args["split_num"],
             "target_shape": args["target_shape"],
             "embedding_type": args["embedding_type"]
@@ -57,13 +58,11 @@ def save_args(log_dir: str, args: Dict[str, Union[float, str]]) -> None:
         "regularization": {
             "weight_decay": args["weight_decay"],
             "label_smoothing": args["label_smoothing"],
-            "dropout_probability": args["dropout_probability"]
+            "swin_dropout_probability": args["swin_dropout_probability"]
         },
         "model": {
             "model": args["model"],
-            "variant": args["variant"],
-            "version": args["version"],
-            "normalization_method": args["normalization_method"]
+            "resnet_normalization_method": args["resnet_normalization_method"]
         }
     }
 

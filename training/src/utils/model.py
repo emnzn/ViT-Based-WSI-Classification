@@ -1,14 +1,130 @@
 from typing import Dict, Any, Union
 
 import torch.nn as nn
+from torchvision.models.squeezenet import SqueezeNet
 from torchvision.models.resnet import ResNet
 from torchvision.models.swin_transformer import SwinTransformer
 from torchvision.models import (
+    squeezenet1_0, squeezenet1_1,
     resnet18, resnet34, resnet50, resnet101, resnet152,
     swin_t, swin_s, swin_b, swin_v2_t, swin_v2_s, swin_v2_b
 )
 
 from .abmil import AttentionBasedMIL
+
+
+def squeezenet(variant: str, num_classes: int) -> SqueezeNet:
+
+    """
+    Initializes a SqueezeNet model for classification.
+
+    Parameters
+    ----------
+    variant: str
+        Must be one of [squeezenet-1.0, squeezenet-1.1]
+
+    num_classes: int
+        The number of classes to be predicted.
+
+    Returns
+    -------
+    model: SqueezeNet
+        The initialized SqueezeNet model.
+    """
+
+    valid_variants = ["squeezenet-1.0", "squeezenet-1.1"]
+
+    assert variant in valid_variants, f"Variant must be one of {valid_variants}"
+    
+    classifier = nn.Sequential(
+            nn.Dropout(p=0.5),
+            nn.Conv2d(512, num_classes, kernel_size=(1, 1), stride=(1, 1)),
+            nn.ReLU(inplace=True),
+            nn.AdaptiveAvgPool2d(output_size=(1, 1)),
+            nn.Flatten()
+        )
+
+    if variant == "squeezenet-1.0":
+        model = squeezenet1_0()
+        model.features[0] = nn.Conv2d(1024, 96, kernel_size=(7, 7), stride=(2, 2))
+
+    if variant == "squeezenet-1.1":
+        model = squeezenet1_1()
+        model.features[0] = nn.Conv2d(1024, 64, kernel_size=(3, 3), stride=(2, 2))
+
+    model.classifier = classifier
+
+    return model
+
+
+def resnet(
+    variant: str,
+    num_classes: int,
+    normalization_method: str
+    ) -> ResNet:
+
+    """
+    Initializes a ResNet model for classification.
+
+    Parameters
+    ----------
+    variant: str
+        Must be one of the following:
+            - resnet18
+            - resnet34
+            - resnet50
+            - resnet101
+            - resnet152
+
+    num_classes: int
+        The number of classes to be predicted.
+
+    Returns
+    -------
+    model: ResNet
+        The initialized ResNet model.
+    """
+
+    valid_variants = ["resnet18", "resnet34", "resnet50", "resnet101", "resnet152"]
+    assertion_message = f"ResNet variant must be one of {valid_variants}."
+
+    assert variant in valid_variants, assertion_message
+
+    valid_normalization_methods = ["batch", "group"]
+    assertion_message = f"normalization_method must be one of {valid_normalization_methods}"
+    
+    assert normalization_method in valid_normalization_methods, assertion_message
+
+    if variant == "resnet18":
+        model = resnet18()
+        model.conv1 = nn.Conv2d(1024, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+        model.fc = nn.Linear(in_features=512, out_features=num_classes)
+
+    if variant == "resnet34":
+        model = resnet34()
+        model.conv1 = nn.Conv2d(1024, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+        model.fc = nn.Linear(in_features=512, out_features=num_classes)
+
+    if variant == "resnet50":
+        model = resnet50()
+        model.conv1 = nn.Conv2d(1024, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+        model.fc = nn.Linear(in_features=2048, out_features=num_classes)
+
+    if variant == "resnet101":
+        model = resnet101()
+        model.conv1 = nn.Conv2d(1024, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+        model.fc = nn.Linear(in_features=2048, out_features=num_classes)
+
+    if variant == "resnet152":
+        model = resnet152()
+        model.conv1 = nn.Conv2d(1024, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+        model.fc = nn.Linear(in_features=2048, out_features=num_classes)
+
+    if normalization_method == "group":
+        model = convert_bn(model, num_groups=32)
+
+    return model
+
 
 def swin_transformer(
     version: str,
@@ -83,72 +199,6 @@ def swin_transformer(
     return model
 
 
-def resnet(
-    variant: str,
-    num_classes: int,
-    normalization_method: str
-    ) -> ResNet:
-
-    """
-    Initializes a ResNet model for classification.
-
-    Parameters
-    ----------
-    variant: str
-        Must be one of the following:
-            - resnet18
-            - resnet34
-            - resnet50
-            - resnet101
-            - resnet152
-
-    Returns
-    -------
-    model: ResNet
-        The initialized ResNet model.
-    """
-
-    valid_variants = ["resnet18", "resnet34", "resnet50", "resnet101", "resnet152"]
-    assertion_message = f"ResNet variant must be one of {valid_variants}."
-
-    assert variant in valid_variants, assertion_message
-
-    valid_normalization_methods = ["batch", "group"]
-    assertion_message = f"normalization_method must be one of {valid_normalization_methods}"
-    
-    assert normalization_method in valid_normalization_methods, assertion_message
-
-    if variant == "resnet18":
-        model = resnet18()
-        model.conv1 = nn.Conv2d(1024, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
-        model.fc = nn.Linear(in_features=512, out_features=num_classes)
-
-    if variant == "resnet34":
-        model = resnet34()
-        model.conv1 = nn.Conv2d(1024, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
-        model.fc = nn.Linear(in_features=512, out_features=num_classes)
-
-    if variant == "resnet50":
-        model = resnet50()
-        model.conv1 = nn.Conv2d(1024, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
-        model.fc = nn.Linear(in_features=2048, out_features=num_classes)
-
-    if variant == "resnet101":
-        model = resnet101()
-        model.conv1 = nn.Conv2d(1024, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
-        model.fc = nn.Linear(in_features=2048, out_features=num_classes)
-
-    if variant == "resnet152":
-        model = resnet152()
-        model.conv1 = nn.Conv2d(1024, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
-        model.fc = nn.Linear(in_features=2048, out_features=num_classes)
-
-    if normalization_method == "group":
-        model = convert_bn(model, num_groups=32)
-
-    return model
-
-
 def attention_mil(num_classes: int) -> AttentionBasedMIL:
 
     """
@@ -209,23 +259,40 @@ def get_model(
     Returns model and save path given a set of arguments.
     """
 
+    valid_models = [
+        "attention-mil", 
+        "squeezenet-1.0", "squeezenet-1.1",
+        "resnet18", "resnet34", "resnet50", "resnet101", "resnet152",
+        "swin-v1-tiny", "swin-v1-small", "swin-v1-base",
+        "swin-v2-tiny", "swin-v2-small", "swin-v2-base"
+    ]
+
+    assertion_message = f"The model must be one of {valid_models}"
+
+    assert args["model"] in valid_models, assertion_message
+
     if args["model"] == "attention-mil":
         model = attention_mil(num_classes=args["num_classes"])
-        save_base_name = args["model"]
 
-    if args["model"] == "resnet":
+    if "squeezenet" in args["model"]:
+        model = squeezenet(variant=args["model"], num_classes=args["num_classes"])
+
+    if "resnet" in args["model"]:
         model = resnet(
-            variant=args["variant"], num_classes=args["num_classes"], 
-            normalization_method=args["normalization_method"]
+            variant=args["model"], 
+            num_classes=args["num_classes"], 
+            normalization_method=args["resnet_normalization_method"]
             )
-        
-        save_base_name = f"{args['variant']}"
 
-    if args["model"] == "swin":
+    if "swin" in args["model"]:
+        version, variant = args["model"].split("-")[1:]
+
         model = swin_transformer(
-            version=args["version"], variant=args["variant"], dropout=args["dropout_probability"], num_classes=args["num_classes"]
+            version=version, variant=variant, 
+            dropout=args["swin_dropout_probability"], 
+            num_classes=args["num_classes"]
             )
         
-        save_base_name = f"{args['model']}-{args['version']}-{args['variant']}"
+    save_base_name = args["model"]
 
     return model, save_base_name

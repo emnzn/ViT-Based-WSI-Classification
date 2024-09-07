@@ -5,9 +5,7 @@
   "num_classes": 2,
   "feature_extractor": "UNI",
   "target_shape": null,
-  "normalization_method": null,
+  "resnet_normalization_method": null,
   "model": "attention-mil",
-  "weights": "highest-balanced-accuracy.pth",
-  "version": null,
-  "variant": null
+  "weights": "highest-balanced-accuracy.pth"
 }

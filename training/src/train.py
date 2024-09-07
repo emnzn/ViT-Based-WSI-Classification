@@ -168,10 +168,11 @@ def main():
     
     os.makedirs(model_dir, exist_ok=True)
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    # device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = "mps"
 
-    train_dataset = WSIDataset(train_dir, label_dir, mil, args["pad"], args["embedding_type"], args["target_shape"])
-    val_dataset = WSIDataset(val_dir, label_dir, mil, args["pad"], args["embedding_type"], args["target_shape"])
+    train_dataset = WSIDataset(train_dir, label_dir, mil, args["pad"], args["augment"], args["embedding_type"], args["target_shape"])
+    val_dataset = WSIDataset(val_dir, label_dir, mil, args["pad"], False, args["embedding_type"], args["target_shape"])
 
     train_loader = DataLoader(train_dataset, batch_size=args["batch_size"], shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=args["batch_size"], shuffle=False)

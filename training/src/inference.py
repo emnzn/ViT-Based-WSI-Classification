@@ -76,7 +76,7 @@ def inference(
     }
 
     model.eval()
-    for wsi_embedding, target, patient_id in tqdm(dataloader, desc="Validation in progess"):
+    for wsi_embedding, target, patient_id in tqdm(dataloader, desc="Inference in progess"):
         wsi_embedding = wsi_embedding.to(device)
         target = target.to(device)
 
@@ -130,7 +130,7 @@ def main():
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        inference_dataset = WSIDataset(inference_dir, label_dir, mil, args["pad"], args["embedding_type"], args["target_shape"])
+        inference_dataset = WSIDataset(inference_dir, label_dir, mil, args["pad"], False, args["embedding_type"], args["target_shape"])
         inference_loader = DataLoader(inference_dataset, batch_size=args["batch_size"], shuffle=False)
 
         model, save_base_name = get_model(args)
@@ -151,11 +151,10 @@ def main():
         f1_scores.append(trial_f1)
         balanced_accuracies.append(trial_balanced_accuracy)
 
-        print("Inference Statistics:")
+        print("\nInference Statistics:")
         print(f"Loss: {trial_loss:.4f} | F1 Score: {trial_f1:.4f} | Balanced Accuracy: {trial_balanced_accuracy:.4f}\n")
 
         print("-------------------------------------------------------------\n")
-
 
     average_loss = sum(losses) / len(losses)
     average_f1 = sum(f1_scores) / len(f1_scores)

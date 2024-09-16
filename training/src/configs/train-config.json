@@ -2,20 +2,20 @@
     "pad": false,
     "augment": false,
     "target_shape": null,
-    "embedding_type": "stitched",
+    "embedding_type": "isolated",
     "seed": 42,
     "epochs": 20,
-    "split_num": 1,
-    "batch_size": 8,
+    "split_num": 5,
+    "batch_size": 1,
     "num_classes": 2,
     "eta_min": 1.0e-6,
     "learning_rate": 1.0e-4,
-    "grad_accumulation": 1,
+    "grad_accumulation": 8,
     "feature_extractor": "UNI",
-    "weight_decay": 1.0e-3,
-    "label_smoothing": 0.2,
+    "weight_decay": 1.0e-5,
+    "label_smoothing": 0.0,
     "swin_dropout_probability": null,
-    "model": "resnet18",
-    "resnet_normalization_method": "batch"
+    "model": "mean-mil",
+    "resnet_normalization_method": null
 }
   

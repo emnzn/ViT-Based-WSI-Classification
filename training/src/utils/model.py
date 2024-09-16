@@ -10,7 +10,7 @@ from torchvision.models import (
     swin_t, swin_s, swin_b, swin_v2_t, swin_v2_s, swin_v2_b
 )
 
-from .abmil import AttentionBasedMIL
+from .mil import AttentionBasedMIL, BaseMIL
 
 
 def squeezenet(variant: str, num_classes: int) -> SqueezeNet:
@@ -219,6 +219,26 @@ def attention_mil(num_classes: int) -> AttentionBasedMIL:
     return model
 
 
+def mil(num_classes: int, pooling_operator: str) -> BaseMIL:
+    """
+    Initializes a two-layer MIL model.
+    """
+
+    input_dim = 1024
+    embed_dim = 512
+    hidden_dim = 384    
+    
+    model = BaseMIL(
+        input_dim,
+        embed_dim,
+        hidden_dim,
+        num_classes,
+        pooling_operator
+        )
+    
+    return model
+
+
 def convert_bn(
     model: ResNet, 
     num_groups: int
@@ -260,7 +280,7 @@ def get_model(
     """
 
     valid_models = [
-        "attention-mil", 
+        "max-mil", "mean-mil", "attention-mil", 
         "squeezenet-1.0", "squeezenet-1.1",
         "resnet18", "resnet34", "resnet50", "resnet101", "resnet152",
         "swin-v1-tiny", "swin-v1-small", "swin-v1-base",
@@ -270,6 +290,12 @@ def get_model(
     assertion_message = f"The model must be one of {valid_models}"
 
     assert args["model"] in valid_models, assertion_message
+
+    if args["model"] == "max-mil":
+        model = mil(num_classes=args["num_classes"], pooling_operator="max")
+
+    if args["model"] == "mean-mil":
+        model = mil(num_classes=args["num_classes"], pooling_operator="mean")
 
     if args["model"] == "attention-mil":
         model = attention_mil(num_classes=args["num_classes"])

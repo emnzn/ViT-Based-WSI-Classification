@@ -1,6 +1,6 @@
 from .save import *
 from .seed import *
-from .abmil import *
+from .mil import *
 from .model import *
 from .dataset import *
 from .argparser import *

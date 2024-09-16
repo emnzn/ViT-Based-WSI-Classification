@@ -11,7 +11,7 @@ from torch.utils.tensorboard import SummaryWriter
 from sklearn.metrics import balanced_accuracy_score, f1_score
 
 from utils import (
-    WSIDataset, get_args, save_args,
+    WSIDataset, get_args, save_args, get_save_dirs,
     get_model, set_seed, ResNet, SwinTransformer,
     AttentionBasedMIL, get_training_checkpoint
 )
@@ -159,8 +159,7 @@ def main():
     val_dir = os.path.join(root_data_dir, "val")
 
     label_dir = os.path.join("..", "data", "labels.csv")
-    model_dir = os.path.join("..", "assets", "model-weights", args["embedding_type"], f"split-{args['split_num']}")
-    log_dir = os.path.join("runs", args["embedding_type"], f"split-{args['split_num']}", args["model"])
+    model_dir, log_dir = get_save_dirs(args, mode="train")
     
     writer = SummaryWriter(log_dir)
     save_args(log_dir, args)

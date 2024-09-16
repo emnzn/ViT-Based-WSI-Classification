@@ -9,9 +9,9 @@ from torch.utils.data import DataLoader
 from sklearn.metrics import balanced_accuracy_score, f1_score
 
 from utils import (
-    WSIDataset, get_args, save_results,
-    get_model, ResNet, SwinTransformer, 
-    AttentionBasedMIL,
+    WSIDataset, get_args, save_results, 
+    get_save_dirs, get_model, ResNet, 
+    SwinTransformer, AttentionBasedMIL,
 )
 
 @torch.no_grad()
@@ -110,6 +110,7 @@ def main():
     mil = True if args["model"] == "attention-mil" else False
 
     root_data_dir = os.path.join("..", "data", args["feature_extractor"], args["embedding_type"])
+    base_model_dir, base_save_dir = get_save_dirs(args, mode="inference")
     num_splits = len(os.listdir(root_data_dir))
 
     losses = []
@@ -123,8 +124,8 @@ def main():
         inference_dir = os.path.join(trial_dir, "test")
 
         label_dir = os.path.join("..", "data", "labels.csv")
-        model_dir = os.path.join("..", "assets", "model-weights", args["embedding_type"], f"split-{split_num}")
-        save_dir = os.path.join("..", "assets", "inference-results", args["embedding_type"], f"split-{split_num}")
+        model_dir = os.path.join(base_model_dir, f"split-{split_num}")
+        save_dir = os.path.join(base_save_dir, f"split-{split_num}")
 
         os.makedirs(save_dir, exist_ok=True)
 

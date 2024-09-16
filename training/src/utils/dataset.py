@@ -80,8 +80,6 @@ class WSIDataset(Dataset):
         self.target_shape = target_shape
 
         self.transforms = A.Compose([
-            A.HorizontalFlip(p=0.5),
-            A.VerticalFlip(p=0.5),
             A.Affine(
                 translate_px=(-100, 100),
                 rotate=0,

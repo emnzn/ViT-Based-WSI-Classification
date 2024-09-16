@@ -1,11 +1,13 @@
 {
   "pad": false,
   "batch_size": 1,
-  "embedding_type": "isolated",
   "num_classes": 2,
-  "feature_extractor": "UNI",
-  "target_shape": null,
-  "resnet_normalization_method": null,
+  "augmented": false,
   "model": "attention-mil",
+  "target_shape": null,
+  "grad_accumulated": true,
+  "feature_extractor": "UNI",
+  "embedding_type": "isolated",
+  "resnet_normalization_method": null,
   "weights": "highest-balanced-accuracy.pth"
 }

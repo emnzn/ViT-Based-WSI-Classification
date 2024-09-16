@@ -22,7 +22,7 @@ def get_args(arg_dir: str) -> Dict[str, Union[float, str]]:
 
     return args
 
-def save_args(log_dir: str, args: Dict[str, Union[float, str]]) -> None:
+def save_args(log_dir: str, args: Dict[str, Union[float, str]]):
     """
     Saves arguments inside a log directory.
 
@@ -68,3 +68,53 @@ def save_args(log_dir: str, args: Dict[str, Union[float, str]]) -> None:
 
     with open(path, "w") as f:
         json.dump(organized_args, f, indent=4)
+
+
+def get_save_dirs(
+    args: Dict[str, Union[float, str]],
+    mode: str
+    ):
+    
+    if mode == "train":
+        if args["embedding_type"] == "isolated":
+            if args["grad_accumulation"] > 1:
+                model_dir = os.path.join("..", "assets", "model-weights", args["embedding_type"], "grad-accumulation", f"split-{args['split_num']}")
+                log_dir = os.path.join("runs", args["embedding_type"], "grad-accumulation", f"split-{args['split_num']}", args["model"])
+
+            else:
+                model_dir = os.path.join("..", "assets", "model-weights", args["embedding_type"], "no-grad-accumulation", f"split-{args['split_num']}")
+                log_dir = os.path.join("runs", args["embedding_type"], "grad-accumulation", f"split-{args['split_num']}", args["model"])
+
+
+        elif args["embedding_type"] == "stitched":
+            if args["augment"]:
+                model_dir = os.path.join("..", "assets", "model-weights", args["embedding_type"], "aug", f"split-{args['split_num']}")
+                log_dir = os.path.join("runs", args["embedding_type"], "aug", f"split-{args['split_num']}", args["model"])
+
+            else:
+                model_dir = os.path.join("..", "assets", "model-weights", args["embedding_type"], "no-aug", f"split-{args['split_num']}")
+                log_dir = os.path.join("runs", args["embedding_type"], "no-aug", f"split-{args['split_num']}", args["model"])
+
+
+        return model_dir, log_dir
+    
+    if mode == "inference":
+        if args["embedding_type"] == "isolated":
+            if args["grad_accumulated"]:
+                base_model_dir = os.path.join("..", "assets", "model-weights", args["embedding_type"], "grad-accumulation")
+                base_save_dir = os.path.join("..", "assets", "inference-results", args["embedding_type"], "grad-accumulation")
+
+            else:
+                base_model_dir = os.path.join("..", "assets", "model-weights", args["embedding_type"], "no-grad-accumulation")
+                base_save_dir = os.path.join("..", "assets", "inference-results", args["embedding_type"], "no-grad-accumulation")
+
+        elif args["embedding_type"] == "stitched":
+            if args["augmented"]:
+                base_model_dir = os.path.join("..", "assets", "model-weights", args["embedding_type"], "aug")
+                base_save_dir = os.path.join("..", "assets", "inference-results", args["embedding_type"], "aug")
+
+            else:
+                base_model_dir = os.path.join("..", "assets", "model-weights", args["embedding_type"], "no-aug")
+                base_save_dir = os.path.join("..", "assets", "inference-results", args["embedding_type"], "no-aug")
+
+        return base_model_dir, base_save_dir

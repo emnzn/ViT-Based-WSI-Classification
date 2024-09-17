@@ -11,14 +11,15 @@ from sklearn.metrics import balanced_accuracy_score, f1_score
 from utils import (
     WSIDataset, get_args, save_results, 
     get_save_dirs, get_model, ResNet, 
-    SwinTransformer, AttentionBasedMIL,
+    SwinTransformer, BaseMIL, 
+    AttentionBasedMIL
 )
 
 @torch.no_grad()
 def inference(
     dataloader: DataLoader,
     criterion: nn.Module,
-    model: Union[ResNet, SwinTransformer, AttentionBasedMIL],
+    model: Union[ResNet, SwinTransformer, BaseMIL, AttentionBasedMIL],
     mil: bool,
     device: str,
     save_dir: str,

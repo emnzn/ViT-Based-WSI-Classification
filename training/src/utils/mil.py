@@ -2,7 +2,82 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class AttentionBasedMIL(nn.Module):
+
+class BaseMIL(nn.Module):
+
+    """
+    Consturcts a Multiple Instance Learning Model with either
+    a mean or max pooling operator.
+
+    Parameters
+    ----------
+    input_dim: int
+        The dimension of the input.
+
+    embed_dim: int
+        The output dimension of the first fully connected layer.
+
+    hidden_dim: int
+        The output dimension of the second fully connected layer.
+
+    num_classes: int
+        The number of output classes.
+
+    pooling_operator: str
+        The method to pool instances.
+        Must be one of [max, mean].
+
+    Returns
+    -------
+    logits: torch.Tensor
+        The output of the model.
+    """
+
+    def __init__(
+        self,
+        input_dim: int,
+        embed_dim: int,
+        hidden_dim: int,
+        num_classes: int,
+        pooling_operator: str = "mean"
+        ):
+        super(BaseMIL, self).__init__()
+
+        valid_pooling_operators = ["max", "mean"]
+        assert pooling_operator in valid_pooling_operators, f"pooling_operator must be one of {valid_pooling_operators}"
+
+        self.pooling_operator = pooling_operator
+
+        self.fc1 = nn.Sequential(
+            nn.Linear(input_dim, embed_dim),
+            nn.ReLU(),
+            nn.Dropout(p=0.10)
+        )
+
+        self.fc2 = nn.Sequential(
+            nn.Linear(embed_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(p=0.25)
+        )
+
+        self.head = nn.Linear(hidden_dim, num_classes)
+
+    def forward(self, x):
+        x = self.fc1(x)
+        x = self.fc2(x)
+
+        if self.pooling_operator == "max":
+            x, _ = torch.max(x, dim=1)
+
+        elif self.pooling_operator == "mean":
+            x = torch.mean(x, dim=1)
+
+        logits = self.head(x)
+
+        return logits
+
+
+class AttentionBasedMIL(BaseMIL):
 
     """
     Constructs the gated variant of the ABMIL architecture.
@@ -37,29 +112,17 @@ class AttentionBasedMIL(nn.Module):
         hidden_dim: int, 
         num_classes: int
         ):
-        super(AttentionBasedMIL, self).__init__()
-
-        self.fc1 = nn.Sequential(
-            nn.Linear(input_dim, embed_dim),
-            nn.ReLU(),
-            nn.Dropout(p=0.10)
+        super(AttentionBasedMIL, self).__init__(
+            input_dim, embed_dim, hidden_dim, num_classes
         )
 
-        self.fc2 = nn.Sequential(
-            nn.Linear(embed_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(p=0.25)
-        )
-        
         self.attention = GatedAttention(hidden_dim)
-
-        self.head = nn.Linear(hidden_dim, num_classes)
 
     def forward(self, x):
         x = self.fc1(x)
         x = self.fc2(x)
+
         weighted_sum, attention_weights = self.attention(x)
-        
         logits = self.head(weighted_sum)
 
         return logits, attention_weights
@@ -103,76 +166,3 @@ class GatedAttention(nn.Module):
 
         return weighted_sum, attention_weights
     
-
-class BaseMIL(nn.Module):
-
-    """
-    Consturcts a Multiple Instance Learning Model with either
-    a mean or max pooling operator.
-
-    Parameters
-    ----------
-    input_dim: int
-        The dimension of the input.
-
-    embed_dim: int
-        The output dimension of the first fully connected layer.
-
-    hidden_dim: int
-        The output dimension of the second fully connected layer.
-
-    num_classes: int
-        The number of output classes.
-
-    pooling_operator: str
-        The method to pool instances.
-        Must be one of [max, mean].
-
-    Returns
-    -------
-    logits: torch.Tensor
-        The output of the model.
-    """
-
-    def __init__(
-        self,
-        input_dim: int,
-        embed_dim: int,
-        hidden_dim: int,
-        num_classes: int,
-        pooling_operator: str
-        ):
-        super(BaseMIL, self).__init__()
-
-        valid_pooling_operators = ["max", "mean"]
-        assert pooling_operator in valid_pooling_operators, f"pooling_operator must be one of {valid_pooling_operators}"
-
-        self.pooling_operator = pooling_operator
-
-        self.fc1 = nn.Sequential(
-            nn.Linear(input_dim, embed_dim),
-            nn.ReLU(),
-            nn.Dropout(p=0.10)
-        )
-
-        self.fc2 = nn.Sequential(
-            nn.Linear(embed_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(p=0.25)
-        )
-
-        self.head = nn.Linear(hidden_dim, num_classes)
-
-    def forward(self, x):
-        if self.pooling_operator == "max":
-            x, _ = torch.max(x, dim=1)
-
-        elif self.pooling_operator == "mean":
-            x = torch.mean(x, dim=1)
-
-        x = self.fc1(x)
-        x = self.fc2(x)
-
-        logits = self.head(x)
-
-        return logits

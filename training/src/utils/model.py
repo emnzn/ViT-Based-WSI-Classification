@@ -199,26 +199,6 @@ def swin_transformer(
     return model
 
 
-def attention_mil(num_classes: int) -> AttentionBasedMIL:
-
-    """
-    Initializes a two-layer Gated Attention MIL model.
-    """
-
-    input_dim = 1024
-    embed_dim = 512
-    hidden_dim = 384    
-    
-    model = AttentionBasedMIL(
-        input_dim,
-        embed_dim,
-        hidden_dim,
-        num_classes
-        )
-    
-    return model
-
-
 def mil(num_classes: int, pooling_operator: str) -> BaseMIL:
     """
     Initializes a two-layer MIL model.
@@ -234,6 +214,26 @@ def mil(num_classes: int, pooling_operator: str) -> BaseMIL:
         hidden_dim,
         num_classes,
         pooling_operator
+        )
+    
+    return model
+
+
+def attention_mil(num_classes: int) -> AttentionBasedMIL:
+
+    """
+    Initializes a two-layer Gated Attention MIL model.
+    """
+
+    input_dim = 1024
+    embed_dim = 512
+    hidden_dim = 384    
+    
+    model = AttentionBasedMIL(
+        input_dim,
+        embed_dim,
+        hidden_dim,
+        num_classes
         )
     
     return model

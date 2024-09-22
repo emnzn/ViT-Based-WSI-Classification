@@ -15,7 +15,7 @@
     "weight_decay": 1.0e-5,
     "label_smoothing": 0.0,
     "swin_dropout_probability": null,
-    "model": "mean-mil",
+    "model": "attention-mil",
     "resnet_normalization_method": null
 }
   

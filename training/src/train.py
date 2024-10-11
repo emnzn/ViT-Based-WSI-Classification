@@ -2,6 +2,7 @@ import os
 from typing import Tuple, Union
 
 import torch
+import numpy as np
 import torch.nn as nn
 from tqdm import tqdm
 import torch.optim as optim
@@ -13,7 +14,8 @@ from sklearn.metrics import balanced_accuracy_score, f1_score
 from utils import (
     WSIDataset, get_args, save_args, get_save_dirs,
     get_model, set_seed, ResNet, SwinTransformer,
-    AttentionBasedMIL, get_training_checkpoint
+    AttentionBasedMIL, get_training_checkpoint,
+    get_criterion
 )
 
 def train(
@@ -177,16 +179,14 @@ def main():
 
     model, save_base_name = get_model(args)
     model = model.to(device)
-
-    train_criterion = nn.CrossEntropyLoss(label_smoothing=args["label_smoothing"])
-    val_criterion = nn.CrossEntropyLoss()
-
+    
+    train_criterion, val_criterion = get_criterion(args)
     optimizer = optim.AdamW(model.parameters(), lr=args["learning_rate"], weight_decay=args["weight_decay"])
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, args["epochs"], eta_min=args["eta_min"])
 
-    running_val_loss = []
-    running_val_f1_score = []
-    running_val_balanced_accuracy = []
+    min_val_loss = np.inf
+    max_val_f1 = -np.inf
+    max_val_balanced_accuracy = -np.inf
 
     for epoch in range(1, args["epochs"] + 1):
         writer.add_scalar("Learning Rate", scheduler.optimizer.param_groups[0]["lr"], epoch)
@@ -215,22 +215,20 @@ def main():
         writer.add_scalar("Validation/F1", val_f1, epoch)
         writer.add_scalar("Validation/Balanced-Accuracy", val_balanced_accuracy, epoch)
 
-        if len(running_val_loss) > 0 and val_loss < min(running_val_loss):
+        if val_loss < min_val_loss:
             torch.save(model.state_dict(), os.path.join(model_dir, f"{save_base_name}-lowest-loss.pth"))
+            min_val_loss = val_loss
             print("New minimum loss — model saved.")
 
-        if len(running_val_balanced_accuracy) > 0 and val_balanced_accuracy > max(running_val_balanced_accuracy):
+        if val_balanced_accuracy > max_val_balanced_accuracy:
             torch.save(model.state_dict(), os.path.join(model_dir, f"{save_base_name}-highest-balanced-accuracy.pth"))
+            max_val_balanced_accuracy = val_balanced_accuracy
             print("New maximum balanced accuracy — model saved.")
 
         if epoch % 5 == 0:
             checkpoint = get_training_checkpoint(epoch, model, optimizer, scheduler)
             torch.save(checkpoint, os.path.join(model_dir, f"{save_base_name}-latest-checkpoint.pth"))
             print("Checkpoint saved.")
-
-        running_val_loss.append(val_loss)
-        running_val_f1_score.append(val_f1)
-        running_val_balanced_accuracy.append(val_balanced_accuracy)
 
         scheduler.step()
         print("-------------------------------------------------------------\n")

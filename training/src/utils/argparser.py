@@ -2,6 +2,12 @@ import os
 import json
 from typing import Dict, Union
 
+import torch
+import torch.nn as nn
+
+from .loss import FocalLoss
+
+
 def get_args(arg_dir: str) -> Dict[str, Union[float, str]]:
     """
     Gets relevant arguments from a JSON file.
@@ -21,6 +27,28 @@ def get_args(arg_dir: str) -> Dict[str, Union[float, str]]:
         args = json.load(f)
 
     return args
+
+
+def get_criterion(args: Dict[str, Union[float, str]]) -> nn.Module:
+    
+    """
+    Returns the criterion for training an validation based on a coinfig file.
+    """
+
+    valid_losses = ["cross-entropy", "focal-loss"]
+    assert args["loss"] in valid_losses, f"loss must be one of {valid_losses}"
+
+    if args["loss"] == "cross-entropy":
+        train_criterion = nn.CrossEntropyLoss(label_smoothing=args["label_smoothing"])
+        val_criterion = nn.CrossEntropyLoss()
+
+    if args["loss"] == "focal-loss":
+        alpha = torch.tensor(args["alpha"]) if args["alpha"] != None else args["alpha"]
+        train_criterion = FocalLoss(alpha=alpha, gamma=args["gamma"])
+        val_criterion = FocalLoss(alpha=alpha, gamma=args["gamma"])
+
+    return train_criterion, val_criterion
+
 
 def save_args(log_dir: str, args: Dict[str, Union[float, str]]):
     """
@@ -78,12 +106,12 @@ def get_save_dirs(
     if mode == "train":
         if args["embedding_type"] == "isolated":
             if args["grad_accumulation"] > 1:
-                model_dir = os.path.join("..", "assets", "model-weights", args["embedding_type"], "grad-accumulation", f"split-{args['split_num']}")
-                log_dir = os.path.join("runs", args["embedding_type"], "grad-accumulation", f"split-{args['split_num']}", args["model"])
+                model_dir = os.path.join("..", "assets", "model-weights", args["embedding_type"], args["loss"], "grad-accumulation", f"split-{args['split_num']}")
+                log_dir = os.path.join("runs", args["embedding_type"], args["loss"], "grad-accumulation", f"split-{args['split_num']}", args["model"])
 
             else:
-                model_dir = os.path.join("..", "assets", "model-weights", args["embedding_type"], "no-grad-accumulation", f"split-{args['split_num']}")
-                log_dir = os.path.join("runs", args["embedding_type"], "grad-accumulation", f"split-{args['split_num']}", args["model"])
+                model_dir = os.path.join("..", "assets", "model-weights", args["embedding_type"], args["loss"], "no-grad-accumulation", f"split-{args['split_num']}")
+                log_dir = os.path.join("runs", args["embedding_type"], args["embedding_type"], "grad-accumulation", f"split-{args['split_num']}", args["model"])
 
 
         elif args["embedding_type"] == "stitched":
@@ -92,8 +120,8 @@ def get_save_dirs(
                 log_dir = os.path.join("runs", args["embedding_type"], "aug", f"split-{args['split_num']}", args["model"])
 
             else:
-                model_dir = os.path.join("..", "assets", "model-weights", args["embedding_type"], "no-aug", f"split-{args['split_num']}")
-                log_dir = os.path.join("runs", args["embedding_type"], "no-aug", f"split-{args['split_num']}", args["model"])
+                model_dir = os.path.join("..", "assets", "model-weights", args["embedding_type"], args["loss"], "no-aug", f"split-{args['split_num']}")
+                log_dir = os.path.join("runs", args["embedding_type"], args["loss"], "no-aug", f"split-{args['split_num']}", args["model"])
 
 
         return model_dir, log_dir
@@ -101,20 +129,20 @@ def get_save_dirs(
     if mode == "inference":
         if args["embedding_type"] == "isolated":
             if args["grad_accumulated"]:
-                base_model_dir = os.path.join("..", "assets", "model-weights", args["embedding_type"], "grad-accumulation")
+                base_model_dir = os.path.join("..", "assets", "model-weights", args["embedding_type"], args["loss"], "grad-accumulation")
                 base_save_dir = os.path.join("..", "assets", "inference-results", args["embedding_type"], "grad-accumulation")
 
             else:
-                base_model_dir = os.path.join("..", "assets", "model-weights", args["embedding_type"], "no-grad-accumulation")
-                base_save_dir = os.path.join("..", "assets", "inference-results", args["embedding_type"], "no-grad-accumulation")
+                base_model_dir = os.path.join("..", "assets", "model-weights", args["embedding_type"], args["loss"], "no-grad-accumulation")
+                base_save_dir = os.path.join("..", "assets", "inference-results", args["embedding_type"], args["loss"], "no-grad-accumulation")
 
         elif args["embedding_type"] == "stitched":
             if args["augmented"]:
-                base_model_dir = os.path.join("..", "assets", "model-weights", args["embedding_type"], "aug")
+                base_model_dir = os.path.join("..", "assets", "model-weights", args["embedding_type"], args["loss"], "aug")
                 base_save_dir = os.path.join("..", "assets", "inference-results", args["embedding_type"], "aug")
 
             else:
-                base_model_dir = os.path.join("..", "assets", "model-weights", args["embedding_type"], "no-aug")
-                base_save_dir = os.path.join("..", "assets", "inference-results", args["embedding_type"], "no-aug")
+                base_model_dir = os.path.join("..", "assets", "model-weights", args["embedding_type"], args["loss"], "no-aug")
+                base_save_dir = os.path.join("..", "assets", "inference-results", args["embedding_type"], args["loss"], "no-aug")
 
         return base_model_dir, base_save_dir

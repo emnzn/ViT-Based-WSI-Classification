@@ -1,7 +1,10 @@
 from pathlib import Path
+import concurrent.futures
 from typing import Tuple, List
 
+import cv2
 import numpy as np
+from tqdm import tqdm
 
 def extract_coords(img_name: str) -> Tuple[int, int, int, int]:
 
@@ -90,3 +93,21 @@ def adjust_coords(
         adjusted_coords.append(adjusted)
 
     return adjusted_coords
+
+
+def min_max_scale(attention_col):
+    return (attention_col - attention_col.min()) / (attention_col.max() - attention_col.min())
+
+
+def read_image(img_path, size):
+    img = cv2.imread(img_path)
+    img = cv2.resize(img, size)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    return img
+
+
+def multithread_read_img(img_paths, size):
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        results = list(tqdm(executor.map(read_image, img_paths, [size] * len(img_paths)), total=len(img_paths), desc="processing images"))
+
+    return results

@@ -2,6 +2,9 @@
     "pad": false,
     "augment": false,
     "target_shape": null,
+    "loss": "focal-loss",
+    "alpha": [0.79746835, 1.34042553],
+    "gamma": 2,
     "embedding_type": "isolated",
     "seed": 42,
     "epochs": 20,
@@ -15,7 +18,7 @@
     "weight_decay": 1.0e-5,
     "label_smoothing": 0.0,
     "swin_dropout_probability": null,
-    "model": "attention-mil",
+    "model": "mean-mil",
     "resnet_normalization_method": null
 }
   

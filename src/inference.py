@@ -20,7 +20,7 @@ def inference(
     dataloader: DataLoader,
     criterion: nn.Module,
     model: Union[ResNet, SwinTransformer, BaseMIL, AttentionBasedMIL],
-    mil: bool,
+    attention_mil: bool,
     device: str,
     save_dir: str,
     save_filename: str
@@ -40,9 +40,9 @@ def inference(
     model: Union[ResNet, SwinTransformer, AttentionBasedMIL]
         The model to be trained.
 
-    mil: bool
-        Whether training under a Multiple-Instance Learning scheme.
-        This is used because the Attenion-Based MIL model returns the 
+    attention_mil: bool
+        Whether training under an Attention-based Multiple-Instance Learning scheme.
+        This is used because the Attention-Based MIL model returns the 
         attention weights placed on each instance.
 
     device: str
@@ -81,7 +81,7 @@ def inference(
         wsi_embedding = wsi_embedding.to(device)
         target = target.to(device)
 
-        if mil: 
+        if attention_mil: 
             logits, _ = model(wsi_embedding)
 
         else: 
@@ -108,7 +108,7 @@ def inference(
 def main():
     config_dir = os.path.join("configs", "inference-config.json")
     args = get_args(config_dir)
-    mil = True if args["model"] == "attention-mil" else False
+    attention_mil = True if args["model"] == "attention-mil" else False
 
     root_data_dir = os.path.join("..", "data", args["feature_extractor"], args["embedding_type"])
     base_model_dir, base_save_dir = get_save_dirs(args, mode="inference")
@@ -132,7 +132,7 @@ def main():
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        inference_dataset = WSIDataset(inference_dir, label_dir, mil, args["pad"], False, args["embedding_type"], args["target_shape"])
+        inference_dataset = WSIDataset(inference_dir, label_dir, attention_mil, args["pad"], False, args["embedding_type"], args["target_shape"])
         inference_loader = DataLoader(inference_dataset, batch_size=args["batch_size"], shuffle=False)
 
         model, save_base_name = get_model(args)
@@ -145,7 +145,7 @@ def main():
         criterion = nn.CrossEntropyLoss()
 
         trial_loss, trial_f1, trial_balanced_accuracy = inference(
-            dataloader=inference_loader, criterion=criterion, model=model, mil=mil,
+            dataloader=inference_loader, criterion=criterion, model=model, attention_mil=attention_mil,
             device=device, save_dir=save_dir, save_filename=save_base_name
         )
 

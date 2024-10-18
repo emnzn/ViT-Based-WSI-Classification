@@ -23,7 +23,7 @@ def train(
     criterion: nn.Module,
     optimizer: optim.Optimizer,
     model: Union[ResNet, SwinTransformer, AttentionBasedMIL],
-    mil: bool,
+    attention_mil: bool,
     device: str,
     grad_accumulation: int
     ) -> Tuple[float, float, float]:
@@ -45,9 +45,9 @@ def train(
     model: Union[ResNet, SwinTransformer, AttentionBasedMIL]
         The model to be trained.
 
-    mil: bool
-        Whether training under a Multiple-Instance Learning scheme.
-        This is used because the Attenion-Based MIL model returns the 
+    attention_mil: bool
+        Whether training under an Attention-based Multiple-Instance Learning scheme.
+        This is used because the Attention-Based MIL model returns the 
         attention weights placed on each instance.
 
     device: str
@@ -79,7 +79,7 @@ def train(
         wsi_embedding = wsi_embedding.to(device)
         target = target.to(device)
 
-        if mil:
+        if attention_mil:
             logits, _ = model(wsi_embedding)
 
         else:
@@ -111,7 +111,7 @@ def validate(
     dataloader: DataLoader,
     criterion: nn.Module,
     model: Union[ResNet, SwinTransformer, AttentionBasedMIL],
-    mil: bool,
+    attention_mil: bool,
     device: str
     ) -> Tuple[float, float, float]:
 
@@ -130,7 +130,7 @@ def validate(
         wsi_embedding = wsi_embedding.to(device)
         target = target.to(device)
 
-        if mil: 
+        if attention_mil: 
             logits, _ = model(wsi_embedding)
 
         else: 
@@ -154,7 +154,7 @@ def validate(
 def main():
     config_dir = os.path.join("configs", "train-config.json")
     args = get_args(config_dir)
-    mil = True if args["model"] == "attention-mil" else False
+    attention_mil = True if args["model"] == "attention-mil" else False
     
     root_data_dir = os.path.join("..", "data", args["feature_extractor"], args["embedding_type"], f"split-{args['split_num']}")
     train_dir = os.path.join(root_data_dir, "train")
@@ -171,8 +171,8 @@ def main():
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    train_dataset = WSIDataset(train_dir, label_dir, mil, args["pad"], args["augment"], args["embedding_type"], args["target_shape"])
-    val_dataset = WSIDataset(val_dir, label_dir, mil, args["pad"], False, args["embedding_type"], args["target_shape"])
+    train_dataset = WSIDataset(train_dir, label_dir, attention_mil, args["pad"], args["augment"], args["embedding_type"], args["target_shape"])
+    val_dataset = WSIDataset(val_dir, label_dir, attention_mil, args["pad"], False, args["embedding_type"], args["target_shape"])
 
     train_loader = DataLoader(train_dataset, batch_size=args["batch_size"], shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=args["batch_size"], shuffle=False)
@@ -185,7 +185,6 @@ def main():
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, args["epochs"], eta_min=args["eta_min"])
 
     min_val_loss = np.inf
-    max_val_f1 = -np.inf
     max_val_balanced_accuracy = -np.inf
 
     for epoch in range(1, args["epochs"] + 1):
@@ -194,7 +193,7 @@ def main():
 
         train_loss, train_f1, train_balanced_accuracy = train(
             dataloader=train_loader, criterion=train_criterion, optimizer=optimizer, 
-            mil=mil, model=model, device=device, grad_accumulation=args["grad_accumulation"]
+            attention_mil=attention_mil, model=model, device=device, grad_accumulation=args["grad_accumulation"]
             )
 
         print("\nTrain Statistics:")
@@ -205,7 +204,7 @@ def main():
         writer.add_scalar("Train/Balanced-Accuracy", train_balanced_accuracy, epoch)
 
         val_loss, val_f1, val_balanced_accuracy = validate(
-            dataloader=val_loader, criterion=val_criterion, model=model, mil=mil, device=device
+            dataloader=val_loader, criterion=val_criterion, model=model, attention_mil=attention_mil, device=device
             )
         
         print("\nValidation Statistics:")

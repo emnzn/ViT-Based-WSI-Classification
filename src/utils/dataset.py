@@ -22,8 +22,8 @@ class WSIDataset(Dataset):
     label_dir: str
         The directory to the labels.
 
-    mil: bool
-        Whether compiling for a Multiple-Instance Based Model.
+    attenion_mil: bool
+        Whether compiling for Attention-based Multiple-Instance Based Model.
 
     pad: bool
         Wether to pad inputs to a pre-determined size.
@@ -63,7 +63,7 @@ class WSIDataset(Dataset):
         self, 
         data_dir: str, 
         label_dir: str,
-        mil: bool,
+        attenion_mil: bool,
         pad: bool,
         augment: bool,
         embedding_type: str,
@@ -73,7 +73,7 @@ class WSIDataset(Dataset):
         self.data_dir = data_dir
         self.filenames = os.listdir(data_dir)
         self.labels = self.generate_labels(label_dir)
-        self.mil = mil
+        self.attenion_mil = attenion_mil
         self.pad = pad
         self.augment = augment
         self.embedding_type = embedding_type
@@ -159,9 +159,8 @@ class WSIDataset(Dataset):
             if self.pad:
                 embedding = self.pad_embedding(embedding, self.target_shape)
 
-            if self.mil:
+            if self.attenion_mil:
                 channels, height, width = embedding.shape
                 embedding = embedding.permute(1, 2, 0).reshape(height * width, channels)
 
         return embedding, label, patient_id
-

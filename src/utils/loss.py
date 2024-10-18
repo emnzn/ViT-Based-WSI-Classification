@@ -48,7 +48,8 @@ class FocalLoss(nn.Module):
 
         ce_loss = self.ce(logits, target)
         pt = torch.exp(-ce_loss)
-        alpha = self.alpha[target] if self.alpha.numel() > 1 else self.alpha
+        alpha = self.alpha.to(target.device)
+        alpha = alpha[target] if self.alpha.numel() > 1 else alpha
 
         focal_loss = alpha * ((1 - pt) ** self.gamma) * ce_loss
 

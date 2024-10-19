@@ -130,7 +130,7 @@ def get_save_dirs(
         if args["embedding_type"] == "isolated":
             if args["grad_accumulated"]:
                 base_model_dir = os.path.join("..", "assets", "model-weights", args["embedding_type"], args["loss"], "grad-accumulation")
-                base_save_dir = os.path.join("..", "assets", "inference-results", args["embedding_type"], "grad-accumulation")
+                base_save_dir = os.path.join("..", "assets", "inference-results", args["embedding_type"], args["loss"], "grad-accumulation")
 
             else:
                 base_model_dir = os.path.join("..", "assets", "model-weights", args["embedding_type"], args["loss"], "no-grad-accumulation")
@@ -139,7 +139,7 @@ def get_save_dirs(
         elif args["embedding_type"] == "stitched":
             if args["augmented"]:
                 base_model_dir = os.path.join("..", "assets", "model-weights", args["embedding_type"], args["loss"], "aug")
-                base_save_dir = os.path.join("..", "assets", "inference-results", args["embedding_type"], "aug")
+                base_save_dir = os.path.join("..", "assets", "inference-results", args["embedding_type"], args["loss"], "aug")
 
             else:
                 base_model_dir = os.path.join("..", "assets", "model-weights", args["embedding_type"], args["loss"], "no-aug")

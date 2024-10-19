@@ -2,13 +2,13 @@
   "pad": false,
   "batch_size": 1,
   "num_classes": 2,
-  "augmented": true,
-  "model": "resnet18",
+  "augmented": false,
+  "model": "max-mil",
   "target_shape": null,
   "loss": "focal-loss",
   "grad_accumulated": false,
   "feature_extractor": "UNI",
-  "embedding_type": "stitched",
-  "resnet_normalization_method": "batch",
+  "embedding_type": "isolated",
+  "resnet_normalization_method": null,
   "weights": "highest-balanced-accuracy.pth"
 }

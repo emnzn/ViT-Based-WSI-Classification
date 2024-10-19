@@ -63,7 +63,6 @@ def forward_pass(
 
     device: str
         One of [cuda, cpu].
-
     """
 
     model.eval()
@@ -127,6 +126,7 @@ def main():
         forward_pass(
             inference_loader, model, patient_table_dir, patch_dir, args["patch_shape"], save_dir, args["model"], mil, device
         )
+        break
 
 
 if __name__ == "__main__":

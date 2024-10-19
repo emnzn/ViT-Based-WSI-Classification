@@ -2,6 +2,7 @@ import os
 from typing import Tuple, Union
 
 import torch
+import numpy as np
 import torch.nn as nn
 from tqdm import tqdm
 import torch.nn.functional as F
@@ -162,9 +163,12 @@ def main():
     average_f1 = sum(f1_scores) / len(f1_scores)
     average_balanced_accuracy = sum(balanced_accuracies) / len(balanced_accuracies)
 
+    std_f1 = np.std(f1_scores)
+    std_balanced_accuracy = np.std(balanced_accuracies)
+
     print("Summary:")
     print(f"Loss: {average_loss:.4f} | F1 Score: {average_f1:.4f} | Balanced Accuracy: {average_balanced_accuracy:.4f}\n")
-
+    print(f"Weighted F1 STD: {std_f1:.4f} | Balanced Accuracy STD: {std_balanced_accuracy:.4f}\n")
 
 if __name__ == "__main__":
     main()

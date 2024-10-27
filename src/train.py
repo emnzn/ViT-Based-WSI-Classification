@@ -171,8 +171,25 @@ def main():
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    train_dataset = WSIDataset(train_dir, label_dir, attention_mil, args["pad"], args["augment"], args["embedding_type"], args["target_shape"])
-    val_dataset = WSIDataset(val_dir, label_dir, attention_mil, args["pad"], False, args["embedding_type"], args["target_shape"])
+    train_dataset = WSIDataset(
+        train_dir, 
+        label_dir, 
+        attention_mil, 
+        args["pad"], 
+        args["augment"], 
+        args["embedding_type"], 
+        args["target_shape"]
+        )
+    
+    val_dataset = WSIDataset(
+        val_dir, 
+        label_dir, 
+        attention_mil, 
+        args["pad"], 
+        False, 
+        args["embedding_type"], 
+        args["target_shape"]
+        )
 
     train_loader = DataLoader(train_dataset, batch_size=args["batch_size"], shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=args["batch_size"], shuffle=False)

@@ -133,7 +133,16 @@ def main():
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        inference_dataset = WSIDataset(inference_dir, label_dir, attention_mil, args["pad"], False, args["embedding_type"], args["target_shape"])
+        inference_dataset = WSIDataset(
+            inference_dir, 
+            label_dir, 
+            attention_mil, 
+            args["pad"], 
+            False, 
+            args["embedding_type"], 
+            args["target_shape"]
+            )
+        
         inference_loader = DataLoader(inference_dataset, batch_size=args["batch_size"], shuffle=False)
 
         model, save_base_name = get_model(args)

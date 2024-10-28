@@ -77,13 +77,18 @@ def inference(
         "target": []
     }
 
+    attention = {
+        "patient_id": [],
+        "attention_weights": []
+    }
+
     model.eval()
     for wsi_embedding, target, patient_id in tqdm(dataloader, desc="Inference in progess"):
         wsi_embedding = wsi_embedding.to(device)
         target = target.to(device)
 
         if attention_mil: 
-            logits, _ = model(wsi_embedding)
+            logits, attention_weights = model(wsi_embedding)
 
         else: 
             logits = model(wsi_embedding)
@@ -93,15 +98,22 @@ def inference(
         pred = torch.argmax(confidence, dim=1)
 
         metrics["patient_id"].extend(patient_id)
-        metrics["loss"].append(loss.detach().cpu().item())
+        metrics["loss"].append(loss.cpu().item())
         metrics["prediction"].extend(pred.cpu().numpy())
         metrics["target"].extend(target.cpu().numpy())
+
+        if attention_mil:
+            attention["patient_id"].extend(patient_id)
+            attention["attention_weights"].append(attention_weights.squeeze().cpu().numpy())
 
     average_loss = sum(metrics["loss"]) / len(dataloader)
     average_f1 = f1_score(metrics["target"], metrics["prediction"], average="weighted")
     average_balanced_accuracy = balanced_accuracy_score(metrics["target"], metrics["prediction"])
 
-    save_results(metrics, save_dir, save_filename)
+    save_results(metrics, save_dir, save_filename, mode="metrics")
+
+    if attention_mil:
+        save_results(attention, save_dir, save_filename, mode="attention")
     
     return average_loss, average_f1, average_balanced_accuracy
 

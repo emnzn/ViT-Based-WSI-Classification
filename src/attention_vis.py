@@ -1,10 +1,13 @@
 import os
-from typing import Tuple, Union
+from typing import (
+    List,
+    Tuple, 
+    Union, 
+    Optional, 
+)
 
 import torch
-import numpy as np
 import pandas as pd
-import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from utils import (
@@ -26,6 +29,7 @@ def forward_pass(
     model_name: str,
     mil: bool,
     device: str,
+    selected_ids: Optional[List[int | str]] = None
     ) -> Tuple[float, float, float]:
 
     """
@@ -63,28 +67,36 @@ def forward_pass(
 
     device: str
         One of [cuda, cpu].
+
+    selected_ids: Optional[List[int | str]]
+        Specific patient IDs to visualize.
+        If this is None, all patient IDs will be visualized.
     """
+    if selected_ids: 
+        selected_ids = set(map(str, selected_ids))
 
     model.eval()
     for wsi_embedding, target, patient_id in dataloader:
         patient_id = patient_id[0]
-        embedding_dir = os.path.join(patient_table_dir, f"{patient_id}.parquet")
-        patient_table = pd.read_parquet(embedding_dir).drop("embedding", axis=1)
-        
-        wsi_embedding = wsi_embedding.to(device)
-        target = target.to(device)
 
-        if mil: 
-            logits, attention = model(wsi_embedding)
+        if not selected_ids or patient_id in selected_ids:
+            embedding_dir = os.path.join(patient_table_dir, f"{patient_id}.parquet")
+            patient_table = pd.read_parquet(embedding_dir).drop("embedding", axis=1)
+            
+            wsi_embedding = wsi_embedding.to(device)
+            target = target.to(device)
 
-        else: 
-            logits = model(wsi_embedding)
+            if mil: 
+                logits, attention = model(wsi_embedding)
 
-        patient_table["adjusted_coords"] = adjust_coords(patient_table["processed_coords"].tolist(), 224, patch_shape)
-        patient_table["img_paths"] = patient_table["coords"].map(lambda x: os.path.join(patch_dir, patient_id, f"{x}.png"))
-        patient_table["img"] = multithread_read_img(patient_table["img_paths"], (patch_shape, patch_shape))
+            else: 
+                logits = model(wsi_embedding)
 
-        visualize_attention(patch_shape, model_name, patient_table, attention, save_dir, patient_id)
+            patient_table["adjusted_coords"] = adjust_coords(patient_table["processed_coords"].tolist(), 224, patch_shape)
+            patient_table["img_paths"] = patient_table["coords"].map(lambda x: os.path.join(patch_dir, patient_id, f"{x}.png"))
+            patient_table["img"] = multithread_read_img(patient_table["img_paths"], (patch_shape, patch_shape))
+
+            visualize_attention(patch_shape, model_name, patient_table, attention, save_dir, patient_id)
 
 
 def main():
@@ -113,7 +125,15 @@ def main():
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        inference_dataset = WSIDataset(inference_dir, label_dir, mil, args["pad"], False, args["embedding_type"], args["target_shape"])
+        inference_dataset = WSIDataset(
+            inference_dir, 
+            label_dir, mil, 
+            args["pad"], 
+            False, 
+            args["embedding_type"], 
+            args["target_shape"]
+            )
+        
         inference_loader = DataLoader(inference_dataset, batch_size=args["batch_size"], shuffle=False)
 
         model, save_base_name = get_model(args)
@@ -124,10 +144,17 @@ def main():
         model.load_state_dict(weights)
 
         forward_pass(
-            inference_loader, model, patient_table_dir, patch_dir, args["patch_shape"], save_dir, args["model"], mil, device
+            inference_loader, 
+            model, 
+            patient_table_dir, 
+            patch_dir, 
+            args["patch_shape"], 
+            save_dir, 
+            args["model"], 
+            mil, 
+            device,
+            args["selected_patients"]
         )
-        break
-
 
 if __name__ == "__main__":
     main()

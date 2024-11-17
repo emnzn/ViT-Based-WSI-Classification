@@ -5,7 +5,7 @@
   "augmented": false,
   "model": "attention-mil",
   "target_shape": null,
-  "loss": "cross-entropy",
+  "loss": "focal-loss",
   "grad_accumulated": true,
   "feature_extractor": "UNI",
   "embedding_type": "isolated",
